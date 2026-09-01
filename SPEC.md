@@ -2,7 +2,7 @@
 
 Moving Flitster from a single-phone localStorage prototype to a public app on
 TanStack Start, backed by the Neon Postgres that already holds the deck, and
-deployed to a Linux server with Docker.
+deployed as a container on the existing codictive VPS.
 
 Status: dependency upgrade done, nothing else started.
 
@@ -96,7 +96,8 @@ Browser (PWA, offline-capable)
   Neon Postgres (plain Postgres; portable, nothing Neon-specific)
 ```
 
-Deployed as two containers behind Caddy on a Linux server — see §10.
+Deployed as a single container behind the Caddy already running on the
+codictive VPS — see §10.
 
 ---
 

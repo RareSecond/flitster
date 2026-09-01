@@ -337,26 +337,92 @@ debouncing or an on-blur commit, or it will hammer the endpoint.
 
 ## 10. Deployment
 
-Target: a Linux server, Docker, Neon stays remote.
+Target: the existing `codictive` VPS (`~/Documents/apps/codictive`), an
+Ansible-managed box that already runs Caddy. Neon stays remote.
+
+**Flitster is the first containerised app on that box.** The infra repo was built
+anticipating this — the `codictive_edge` network comment reads *"Future app
+containers join this network and are reachable by service name from Caddy, so
+they never need to publish a port of their own"* — but the seam has no consumers
+yet, so some of it has to be built.
 
 ```
-Internet ──► Caddy (:80/:443, automatic Let's Encrypt)
-                │
-                └──► flitster (Start node-server preset, :3000)
+Internet ──► Caddy (already running, /srv/stack, ports 80/443)
+                │  reverse_proxy over codictive_edge
+                └──► flitster:3000  (Start node-server preset, no published port)
                           │
                           └──► Neon Postgres (remote)
 ```
 
+### What already exists and is reused
+
+- **Caddy, TLS, ACME.** Certificates are automatic via the existing
+  `acme_email`. No Caddy container in Flitster's compose — that would collide
+  with the running one over ports 80/443.
+- **The `codictive_edge` network.** Flitster joins it as `external: true` and
+  publishes **no ports**. This is a security requirement, not tidiness: the infra
+  README notes Docker writes its iptables rules ahead of UFW, so a published port
+  punches straight through the firewall.
+- **The `(hardening)` and `(cache)` Caddyfile snippets.** The cache snippet
+  already does the right thing for a Vite PWA — `/assets/*` immutable, and `/`,
+  `*.html`, `/sw.js` on `no-cache`, which is exactly the service-worker
+  revalidation rule this app needs.
+
+### What has to be added to the infra repo
+
+`sites.yml` only understands `static_sites`, and `Caddyfile.j2` only emits
+`root` + `file_server`. There is no `reverse_proxy` anywhere. Required changes,
+all in `~/Documents/apps/codictive`:
+
+1. **A new `apps:` list in `sites.yml`** — `name`, `domains`, `upstream`
+   (`service:port`), optional `headers`.
+2. **A second loop in `Caddyfile.j2`** emitting a `reverse_proxy` block per app,
+   importing `hardening`, with its own log file. Existing static rendering is
+   untouched.
+3. **A `deploy-app.yml` reusable workflow** beside `deploy-static.yml`. The
+   static one rsyncs a release directory and flips a symlink, which does not
+   apply to a container. This one builds an image, pushes to **ghcr.io**, then
+   over SSH pulls and restarts the service.
+4. **A per-app compose file on the host**, e.g. `/srv/apps/flitster/`, joining
+   `codictive_edge`.
+
+### Runtime secrets — an open gap
+
+The infra repo has no home for application secrets. `admin_ssh_keys` and
+`deploy_ssh_keys` are *public* halves and safe in git; `DATABASE_URL`,
+`ADMIN_TOKEN`, and `SPOTIFY_CLIENT_SECRET` are not, and there is no
+`ansible-vault` usage in the repo today.
+
+Options, cheapest first:
+
+- **GitHub secrets → env file at deploy time.** The workflow writes
+  `/srv/apps/flitster/.env` over SSH. Fits the existing `secrets: inherit`
+  pattern and adds no new tooling. The `deploy` user currently owns nothing
+  outside `sites_root`, so this needs a small permissions change.
+- **`ansible-vault`.** Secrets live encrypted in the infra repo, written on
+  converge. More correct, introduces a passphrase to manage.
+- **Written on the host by hand once.** Simplest, but undocumented state on a box
+  whose whole premise is that it is disposable and reproducible.
+
+### The Flitster side
+
 - **Multi-stage Dockerfile** on `node:24-alpine`: install → build → copy the
   Start node-server output into a slim runtime stage.
-- **Caddy** terminates TLS with automatic certificates. This finally replaces the
-  self-signed LAN cert, and it matters more than usual here: camera and
-  `devicemotion` both require a secure context, so a real certificate is a
-  functional requirement, not hygiene.
-- **Compose** with two services, `app` and `caddy`. No Postgres service — Neon is
-  remote and stays that way.
-- **Migrations** run via `drizzle-kit` as an explicit step, not on container
-  start. Automatic migration-on-boot makes rollbacks unpleasant.
+- **Compose** with one service, joined to the external `codictive_edge` network,
+  no published ports, `restart: unless-stopped`.
+- **Migrations** run via `drizzle-kit` as an explicit deploy step, not on
+  container start. Automatic migration-on-boot makes rollbacks unpleasant.
+- If any config is ever bind-mounted in, mount the **directory, never the single
+  file** — the infra README documents the inode-pinning trap that makes a
+  file mount silently stale.
+
+### Rollback
+
+Static sites get instant rollback by re-pointing a symlink (`site-release
+rollback`). Containers get no equivalent for free. Tagging images with the commit
+SHA and keeping the previous tag on the host gives roughly the same property:
+retag and restart. Worth deciding whether that lives in the infra repo as a
+`app-release` helper mirroring `site-release`.
 
 ### Environment variables
 
@@ -387,19 +453,31 @@ Spotify dashboard, replacing `https://192.168.1.11:5173/`.
 4. **Preview URL rotation** (§7).
 5. **`setTrackYear` write volume** (§9).
 6. **The scan-path synchronous read** (§9, `App.tsx:127`).
+7. **Infra repo has never run an app container.** The `codictive_edge` seam is
+   designed but unused, and `Caddyfile.j2` has no `reverse_proxy` path at all.
+   Flitster is the first consumer, so that work is greenfield rather than
+   configuration (§10).
 
 ---
 
 ## 12. Decisions still needed
 
 - **`ADMIN_TOKEN` value** — generate one, or supply your own?
-- **Domain / public origin** — needed for Caddy and the Spotify redirect URI.
+- **Domain** — presumably `flitster.codictive.be`. The A record must exist
+  *before* the Caddyfile mentions it, since Caddy requests a certificate as soon
+  as it sees the hostname. Also becomes the Spotify redirect URI.
+- **Runtime secret storage** (§10) — GitHub secrets written to an env file,
+  `ansible-vault`, or by hand. This is a gap in the infra repo, not just a
+  Flitster choice; whatever is picked sets the pattern for every future app.
+- **Container rollback** (§10) — build an `app-release` helper mirroring
+  `site-release`, or accept redeploy-to-roll-back for now.
 - **Import/export clipboard paths.** With a server they are either admin-only
   tools or vestigial. Keep, gate, or delete?
 - **Deck write access.** Assumed admin-only, same as playlists — confirm.
 
 Settled: TanStack Start over Hono; Drizzle for the data layer; Neon retained
-rather than self-hosted Postgres; Docker + Caddy on a Linux server.
+rather than self-hosted Postgres; deployed as a container behind the existing
+Caddy on the codictive VPS.
 
 ---
 
@@ -433,5 +511,13 @@ stopping point.
 8. **Rewire writes** — mutations plus the admin token gate.
 9. **Spotify split** — catalog server-side, stored preview URLs, login demoted to
    opt-in for connect mode.
-10. **Docker + Caddy**, deploy, register the redirect URI.
-11. **Update README** — it currently says "Not built: any server."
+10. **Dockerfile + compose** on the Flitster side; verify the image runs locally.
+11. **Infra repo work** (`~/Documents/apps/codictive`) — `apps:` in `sites.yml`,
+    `reverse_proxy` rendering in `Caddyfile.j2`, `deploy-app.yml` workflow,
+    secret storage. Point DNS at the VPS *before* `make sites`.
+12. **Deploy**, register the Spotify redirect URI for the new origin.
+13. **Update README** — it currently says "Not built: any server."
+
+Steps 10–11 are a natural split point: everything before them lives in this
+repo, and step 11 is entirely in the infra repo. It can be done by someone else,
+or at a different time, without blocking the rest.

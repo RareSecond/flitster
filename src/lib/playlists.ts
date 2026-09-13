@@ -1,5 +1,8 @@
 import type { Deck } from './deck'
 import { byYear } from './deck'
+import type { ImportSong } from './songImport'
+import { exactMatch, importedTrack } from './songImport'
+import type { TrackMatch } from './spotifyApi'
 
 /**
  * A playlist is a *pool of tracks bucketed by year*, not a per-card mapping.
@@ -27,6 +30,7 @@ export type Playlist = {
   name: string
   tracks: PlaylistTrack[]
   createdAt: string
+  importSongs?: ImportSong[]
 }
 
 export type Playlists = Record<string, Playlist>
@@ -45,6 +49,50 @@ const persist = (p: Playlists) => {
 }
 
 const newId = () => Math.random().toString(36).slice(2, 10)
+
+export function acceptImportMatches(id: string): { playlists: Playlists; accepted: number; remaining: number } {
+  const all = loadPlaylists()
+  const list = all[id]
+  if (!list) throw new Error('Import playlist no longer exists.')
+  let accepted = 0
+  for (const song of list.importSongs ?? []) {
+    if (song.status !== 'review') continue
+    const match = exactMatch(song, song.candidates ?? [])
+    if (!match) continue
+    const existing = list.tracks.find(t => t.uri === match.uri)
+    if (existing && existing.year !== song.year) continue
+    if (!existing) list.tracks.push(importedTrack(song, match))
+    song.status = 'added'
+    delete song.candidates
+    accepted++
+  }
+  return { playlists: persist(all), accepted,
+    remaining: list.importSongs?.filter(s => s.status === 'review').length ?? 0 }
+}
+
+export function createSongPlaylist(name: string, songs: ImportSong[], id = newId()): string {
+  const all = loadPlaylists()
+  if (!all[id]) persist({ ...all, [id]: {
+    id, name, tracks: [], createdAt: new Date().toISOString(), importSongs: songs,
+  } })
+  return id
+}
+
+/** Save the accepted track and queue progress together so interrupted imports resume. */
+export function resolveImportSong(id: string, index: number,
+  status: ImportSong['status'], candidates?: TrackMatch[], match?: TrackMatch): Playlists {
+  const all = loadPlaylists()
+  const list = all[id]
+  const song = list?.importSongs?.[index]
+  if (!song) throw new Error('Import playlist no longer exists.')
+  if (match) {
+    const existing = list.tracks.find(t => t.uri === match.uri)
+    if (existing && existing.year !== song.year) throw new Error('This recording is already assigned to another year. Choose another recording or skip this song.')
+    if (!existing) list.tracks.push(importedTrack(song, match))
+  }
+  list.importSongs![index] = { ...song, status, candidates }
+  return persist(all)
+}
 
 export function createPlaylist(name: string): Playlists {
   const id = newId()

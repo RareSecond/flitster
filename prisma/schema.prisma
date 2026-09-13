@@ -1,0 +1,61 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../server/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model DeckCard {
+  code    String   @id
+  year    Int
+  addedAt DateTime @map("added_at") @db.Timestamptz(6)
+
+  @@map("deck_cards")
+}
+
+model User {
+  id          String           @id @default(cuid())
+  name        String?
+  lists       List[]
+  activations ListActivation[]
+}
+
+// Lists form a shared library. Ownership controls who may edit a list.
+model List {
+  id          String           @id @default(cuid())
+  name        String
+  ownerId     String
+  owner       User             @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  songs       Song[]
+  activations ListActivation[]
+
+  @@index([ownerId])
+}
+
+// Each list owns its song entries and chooses its own game years.
+model Song {
+  id        String @id @default(cuid())
+  year      Int
+  title     String
+  artist    String
+  spotifyId String
+  listId    String
+  list      List   @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@index([listId, year])
+}
+
+// A row means this person has activated this list. Delete it to deactivate.
+model ListActivation {
+  userId String
+  listId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  list   List   @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@id([userId, listId])
+  @@index([listId])
+}

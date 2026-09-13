@@ -20,6 +20,7 @@ async function call(path: string, init: RequestInit = {}) {
     },
   })
   if (res.status === 204) return null
+  if (res.status === 429) throw new Error(`Spotify rate limit reached. Wait ${res.headers.get('Retry-After') ?? '30'} seconds, then resume the import.`)
   // On the player endpoints a 404 means "nothing is playing anywhere", not
   // "missing resource" -- everywhere else it really is a missing resource.
   if (res.status === 404 && path.startsWith('/me/player')) throw new NoActiveDeviceError()
@@ -109,10 +110,11 @@ const toMatch = (t: RawTrack): TrackMatch => ({
   year: Number(t.album.release_date.slice(0, 4)) || 0,
 })
 
-export async function searchTracks(query: string, limit = 8): Promise<TrackMatch[]> {
+export async function searchTracks(query: string, limit = 8, signal?: AbortSignal): Promise<TrackMatch[]> {
   if (!query.trim()) return []
   const res = (await call(
     `/search?type=track&limit=${limit}&q=${encodeURIComponent(query)}`,
+    { signal },
   )) as { tracks: { items: RawTrack[] } } | null
   return (res?.tracks.items ?? []).map(toMatch)
 }

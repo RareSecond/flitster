@@ -64,9 +64,30 @@ question gets answered.
    reissue reports 2015. Imported years are prefilled, compilations and
    reissue-shaped album names are flagged, and every year is hand-editable.
 
+## Importing a song list
+
+In **Playlists**, choose **Import Belgian Hitster (194 songs)** to prepare the
+included 1960–2025 list, then **Match songs on Spotify** using your Spotify login.
+The playlist is activated automatically. The first exact artist/title match is
+added regardless of Spotify's album year; missing matches stay in a review queue with alternate search
+and skip controls. The supplied year is retained, even when Spotify reports a
+different album year. Review the recordings and years before playing.
+Use **Accept matching songs — keep our years** to apply this to an existing review
+queue. Songs with no exact match or an existing conflicting year remain for review.
+
+You can also upload a JSON array of `{ "artist": "…", "title": "…", "year": 1960 }`.
+Progress is saved on this browser after each song. Reopen the playlist to resume
+after pausing, a reload, or an API error. Export includes the pending review queue.
+The bundled import button reopens the same playlist without resetting progress.
+
 ## Not built
 
-Any server. Everything is `localStorage` on one phone, with JSON export/import
+The UI has no server integration yet. Everything in the UI is `localStorage` on one phone, with JSON export/import
 (`DeckCard[]`, `Playlist[]`) as the migration path. A real version needs a shared
 backend so a deck is captured once for everyone who owns it and playlists can be
 authored on a laptop. Also missing: players, scoring, timeline placement.
+
+Prisma and the Neon database schema are now set up, with the captured deck and
+accepted Belgian list imported. See [database setup](prisma/README.md) for the
+model, migrations, and seed commands. Connecting the UI and adding authentication
+are the next steps; this project currently uses React/Vite, not TanStack Start.

@@ -1,0 +1,972 @@
+[
+  {
+    "year": 1960,
+    "artist": "Rocco Granata",
+    "title": "Marina"
+  },
+  {
+    "year": 1960,
+    "artist": "Bobbejaan Schoepen",
+    "title": "Een hutje op de heide"
+  },
+  {
+    "year": 1961,
+    "artist": "The String-A-Longs",
+    "title": "Wheels"
+  },
+  {
+    "year": 1961,
+    "artist": "Elvis Presley",
+    "title": "Wooden Heart"
+  },
+  {
+    "year": 1962,
+    "artist": "Chubby Checker",
+    "title": "Let's Twist Again"
+  },
+  {
+    "year": 1962,
+    "artist": "The Tornados",
+    "title": "Telstar"
+  },
+  {
+    "year": 1963,
+    "artist": "Trini Lopez",
+    "title": "If I Had a Hammer"
+  },
+  {
+    "year": 1963,
+    "artist": "Petula Clark",
+    "title": "Cœur blessé"
+  },
+  {
+    "year": 1964,
+    "artist": "Roy Orbison",
+    "title": "Oh, Pretty Woman"
+  },
+  {
+    "year": 1964,
+    "artist": "The Beatles",
+    "title": "I Want to Hold Your Hand"
+  },
+  {
+    "year": 1964,
+    "artist": "Alain Barrière",
+    "title": "Ma vie"
+  },
+  {
+    "year": 1965,
+    "artist": "Lucille Starr",
+    "title": "The French Song"
+  },
+  {
+    "year": 1965,
+    "artist": "The Rolling Stones",
+    "title": "(I Can't Get No) Satisfaction"
+  },
+  {
+    "year": 1965,
+    "artist": "The Beatles",
+    "title": "Help!"
+  },
+  {
+    "year": 1966,
+    "artist": "Frank Sinatra",
+    "title": "Strangers in the Night"
+  },
+  {
+    "year": 1966,
+    "artist": "The Beatles",
+    "title": "Yellow Submarine"
+  },
+  {
+    "year": 1966,
+    "artist": "The Beach Boys",
+    "title": "Good Vibrations"
+  },
+  {
+    "year": 1967,
+    "artist": "Scott McKenzie",
+    "title": "San Francisco (Be Sure to Wear Flowers in Your Hair)"
+  },
+  {
+    "year": 1967,
+    "artist": "Tom Jones",
+    "title": "Green, Green Grass of Home"
+  },
+  {
+    "year": 1967,
+    "artist": "The Beatles",
+    "title": "All You Need Is Love"
+  },
+  {
+    "year": 1968,
+    "artist": "Engelbert Humperdinck",
+    "title": "A Man Without Love"
+  },
+  {
+    "year": 1968,
+    "artist": "The Beatles",
+    "title": "Hey Jude"
+  },
+  {
+    "year": 1968,
+    "artist": "Tom Jones",
+    "title": "Delilah"
+  },
+  {
+    "year": 1969,
+    "artist": "The Archies",
+    "title": "Sugar, Sugar"
+  },
+  {
+    "year": 1969,
+    "artist": "The Beatles",
+    "title": "Get Back"
+  },
+  {
+    "year": 1969,
+    "artist": "Zager & Evans",
+    "title": "In the Year 2525"
+  },
+  {
+    "year": 1970,
+    "artist": "Mungo Jerry",
+    "title": "In the Summertime"
+  },
+  {
+    "year": 1970,
+    "artist": "Simon & Garfunkel",
+    "title": "El Condor Pasa"
+  },
+  {
+    "year": 1970,
+    "artist": "Marc Hamilton",
+    "title": "Comme j'ai toujours envie d'aimer"
+  },
+  {
+    "year": 1971,
+    "artist": "Michel Delpech",
+    "title": "Pour un flirt"
+  },
+  {
+    "year": 1971,
+    "artist": "George Harrison",
+    "title": "My Sweet Lord"
+  },
+  {
+    "year": 1971,
+    "artist": "Middle of the Road",
+    "title": "Chirpy Chirpy Cheep Cheep"
+  },
+  {
+    "year": 1972,
+    "artist": "Mouth & MacNeal",
+    "title": "Hello-A"
+  },
+  {
+    "year": 1972,
+    "artist": "Julio Iglesias",
+    "title": "Un canto a Galicia"
+  },
+  {
+    "year": 1972,
+    "artist": "Middle of the Road",
+    "title": "Sacramento"
+  },
+  {
+    "year": 1973,
+    "artist": "Dawn feat. Tony Orlando",
+    "title": "Tie a Yellow Ribbon Round the Ole Oak Tree"
+  },
+  {
+    "year": 1973,
+    "artist": "The Sweet",
+    "title": "Block Buster!"
+  },
+  {
+    "year": 1973,
+    "artist": "Demis Roussos",
+    "title": "Forever and Ever"
+  },
+  {
+    "year": 1974,
+    "artist": "George McCrae",
+    "title": "Rock Your Baby"
+  },
+  {
+    "year": 1974,
+    "artist": "ABBA",
+    "title": "Waterloo"
+  },
+  {
+    "year": 1974,
+    "artist": "Carl Douglas",
+    "title": "Kung Fu Fighting"
+  },
+  {
+    "year": 1975,
+    "artist": "George Baker Selection",
+    "title": "Paloma Blanca"
+  },
+  {
+    "year": 1975,
+    "artist": "Queen",
+    "title": "Bohemian Rhapsody"
+  },
+  {
+    "year": 1975,
+    "artist": "10cc",
+    "title": "I'm Not in Love"
+  },
+  {
+    "year": 1976,
+    "artist": "ABBA",
+    "title": "Dancing Queen"
+  },
+  {
+    "year": 1976,
+    "artist": "Pussycat",
+    "title": "Mississippi"
+  },
+  {
+    "year": 1976,
+    "artist": "Elton John & Kiki Dee",
+    "title": "Don't Go Breaking My Heart"
+  },
+  {
+    "year": 1977,
+    "artist": "Boney M.",
+    "title": "Ma Baker"
+  },
+  {
+    "year": 1977,
+    "artist": "Donna Summer",
+    "title": "I Feel Love"
+  },
+  {
+    "year": 1977,
+    "artist": "Smokie",
+    "title": "Living Next Door to Alice"
+  },
+  {
+    "year": 1978,
+    "artist": "Boney M.",
+    "title": "Rivers of Babylon"
+  },
+  {
+    "year": 1978,
+    "artist": "John Travolta & Olivia Newton-John",
+    "title": "You're the One That I Want"
+  },
+  {
+    "year": 1978,
+    "artist": "Village People",
+    "title": "Y.M.C.A."
+  },
+  {
+    "year": 1979,
+    "artist": "Patrick Hernandez",
+    "title": "Born to Be Alive"
+  },
+  {
+    "year": 1979,
+    "artist": "Gloria Gaynor",
+    "title": "I Will Survive"
+  },
+  {
+    "year": 1979,
+    "artist": "The Police",
+    "title": "Message in a Bottle"
+  },
+  {
+    "year": 1980,
+    "artist": "ABBA",
+    "title": "The Winner Takes It All"
+  },
+  {
+    "year": 1980,
+    "artist": "Barbra Streisand",
+    "title": "Woman in Love"
+  },
+  {
+    "year": 1980,
+    "artist": "Lipps Inc.",
+    "title": "Funkytown"
+  },
+  {
+    "year": 1981,
+    "artist": "Kim Wilde",
+    "title": "Kids in America"
+  },
+  {
+    "year": 1981,
+    "artist": "Stars on 45",
+    "title": "Stars on 45"
+  },
+  {
+    "year": 1981,
+    "artist": "The Human League",
+    "title": "Don't You Want Me"
+  },
+  {
+    "year": 1982,
+    "artist": "Culture Club",
+    "title": "Do You Really Want to Hurt Me"
+  },
+  {
+    "year": 1982,
+    "artist": "Survivor",
+    "title": "Eye of the Tiger"
+  },
+  {
+    "year": 1982,
+    "artist": "Dexys Midnight Runners",
+    "title": "Come On Eileen"
+  },
+  {
+    "year": 1983,
+    "artist": "Michael Jackson",
+    "title": "Billie Jean"
+  },
+  {
+    "year": 1983,
+    "artist": "Eurythmics",
+    "title": "Sweet Dreams (Are Made of This)"
+  },
+  {
+    "year": 1983,
+    "artist": "Culture Club",
+    "title": "Karma Chameleon"
+  },
+  {
+    "year": 1984,
+    "artist": "George Michael",
+    "title": "Careless Whisper"
+  },
+  {
+    "year": 1984,
+    "artist": "Prince",
+    "title": "Purple Rain"
+  },
+  {
+    "year": 1984,
+    "artist": "Wham!",
+    "title": "Wake Me Up Before You Go-Go"
+  },
+  {
+    "year": 1985,
+    "artist": "USA for Africa",
+    "title": "We Are the World"
+  },
+  {
+    "year": 1985,
+    "artist": "a-ha",
+    "title": "Take on Me"
+  },
+  {
+    "year": 1985,
+    "artist": "Madonna",
+    "title": "Into the Groove"
+  },
+  {
+    "year": 1986,
+    "artist": "Europe",
+    "title": "The Final Countdown"
+  },
+  {
+    "year": 1986,
+    "artist": "Madonna",
+    "title": "Papa Don't Preach"
+  },
+  {
+    "year": 1986,
+    "artist": "Berlin",
+    "title": "Take My Breath Away"
+  },
+  {
+    "year": 1987,
+    "artist": "Rick Astley",
+    "title": "Never Gonna Give You Up"
+  },
+  {
+    "year": 1987,
+    "artist": "Whitney Houston",
+    "title": "I Wanna Dance with Somebody"
+  },
+  {
+    "year": 1987,
+    "artist": "U2",
+    "title": "With or Without You"
+  },
+  {
+    "year": 1988,
+    "artist": "Yazz & The Plastic Population",
+    "title": "The Only Way Is Up"
+  },
+  {
+    "year": 1988,
+    "artist": "Bobby McFerrin",
+    "title": "Don't Worry, Be Happy"
+  },
+  {
+    "year": 1988,
+    "artist": "France Gall",
+    "title": "Ella, elle l'a"
+  },
+  {
+    "year": 1989,
+    "artist": "Kaoma",
+    "title": "Lambada"
+  },
+  {
+    "year": 1989,
+    "artist": "Madonna",
+    "title": "Like a Prayer"
+  },
+  {
+    "year": 1989,
+    "artist": "Technotronic",
+    "title": "Pump Up the Jam"
+  },
+  {
+    "year": 1990,
+    "artist": "Sinéad O'Connor",
+    "title": "Nothing Compares 2 U"
+  },
+  {
+    "year": 1990,
+    "artist": "Vaya Con Dios",
+    "title": "What's a Woman?"
+  },
+  {
+    "year": 1990,
+    "artist": "Technotronic",
+    "title": "Get Up!"
+  },
+  {
+    "year": 1991,
+    "artist": "Bryan Adams",
+    "title": "(Everything I Do) I Do It for You"
+  },
+  {
+    "year": 1991,
+    "artist": "R.E.M.",
+    "title": "Losing My Religion"
+  },
+  {
+    "year": 1991,
+    "artist": "Scorpions",
+    "title": "Wind of Change"
+  },
+  {
+    "year": 1992,
+    "artist": "Snap!",
+    "title": "Rhythm Is a Dancer"
+  },
+  {
+    "year": 1992,
+    "artist": "Dr. Alban",
+    "title": "It's My Life"
+  },
+  {
+    "year": 1992,
+    "artist": "Whitney Houston",
+    "title": "I Will Always Love You"
+  },
+  {
+    "year": 1993,
+    "artist": "2 Unlimited",
+    "title": "No Limit"
+  },
+  {
+    "year": 1993,
+    "artist": "Haddaway",
+    "title": "What Is Love"
+  },
+  {
+    "year": 1993,
+    "artist": "Culture Beat",
+    "title": "Mr. Vain"
+  },
+  {
+    "year": 1994,
+    "artist": "Wet Wet Wet",
+    "title": "Love Is All Around"
+  },
+  {
+    "year": 1994,
+    "artist": "Rednex",
+    "title": "Cotton Eye Joe"
+  },
+  {
+    "year": 1994,
+    "artist": "Ace of Base",
+    "title": "The Sign"
+  },
+  {
+    "year": 1995,
+    "artist": "Coolio feat. L.V.",
+    "title": "Gangsta's Paradise"
+  },
+  {
+    "year": 1995,
+    "artist": "Scatman John",
+    "title": "Scatman"
+  },
+  {
+    "year": 1995,
+    "artist": "Vangelis",
+    "title": "Conquest of Paradise"
+  },
+  {
+    "year": 1996,
+    "artist": "Los del Río",
+    "title": "Macarena"
+  },
+  {
+    "year": 1996,
+    "artist": "Fugees",
+    "title": "Killing Me Softly"
+  },
+  {
+    "year": 1996,
+    "artist": "Spice Girls",
+    "title": "Wannabe"
+  },
+  {
+    "year": 1997,
+    "artist": "Elton John",
+    "title": "Candle in the Wind 1997"
+  },
+  {
+    "year": 1997,
+    "artist": "Puff Daddy & Faith Evans",
+    "title": "I'll Be Missing You"
+  },
+  {
+    "year": 1997,
+    "artist": "Aqua",
+    "title": "Barbie Girl"
+  },
+  {
+    "year": 1998,
+    "artist": "Céline Dion",
+    "title": "My Heart Will Go On"
+  },
+  {
+    "year": 1998,
+    "artist": "Cher",
+    "title": "Believe"
+  },
+  {
+    "year": 1998,
+    "artist": "Vengaboys",
+    "title": "We Like to Party!"
+  },
+  {
+    "year": 1999,
+    "artist": "Lou Bega",
+    "title": "Mambo No. 5 (A Little Bit of...)"
+  },
+  {
+    "year": 1999,
+    "artist": "Eiffel 65",
+    "title": "Blue (Da Ba Dee)"
+  },
+  {
+    "year": 1999,
+    "artist": "Britney Spears",
+    "title": "...Baby One More Time"
+  },
+  {
+    "year": 2000,
+    "artist": "R. Kelly",
+    "title": "If I Could Turn Back the Hands of Time"
+  },
+  {
+    "year": 2000,
+    "artist": "Bomfunk MC's",
+    "title": "Freestyler"
+  },
+  {
+    "year": 2000,
+    "artist": "Modjo",
+    "title": "Lady (Hear Me Tonight)"
+  },
+  {
+    "year": 2001,
+    "artist": "Shaggy feat. RikRok",
+    "title": "It Wasn't Me"
+  },
+  {
+    "year": 2001,
+    "artist": "Kylie Minogue",
+    "title": "Can't Get You Out of My Head"
+  },
+  {
+    "year": 2001,
+    "artist": "Alicia Keys",
+    "title": "Fallin'"
+  },
+  {
+    "year": 2002,
+    "artist": "Las Ketchup",
+    "title": "The Ketchup Song (Aserejé)"
+  },
+  {
+    "year": 2002,
+    "artist": "Shakira",
+    "title": "Whenever, Wherever"
+  },
+  {
+    "year": 2002,
+    "artist": "Eminem",
+    "title": "Without Me"
+  },
+  {
+    "year": 2003,
+    "artist": "The Black Eyed Peas",
+    "title": "Where Is the Love?"
+  },
+  {
+    "year": 2003,
+    "artist": "Beyoncé feat. Jay-Z",
+    "title": "Crazy in Love"
+  },
+  {
+    "year": 2003,
+    "artist": "50 Cent",
+    "title": "In da Club"
+  },
+  {
+    "year": 2004,
+    "artist": "O-Zone",
+    "title": "Dragostea din tei"
+  },
+  {
+    "year": 2004,
+    "artist": "Britney Spears",
+    "title": "Toxic"
+  },
+  {
+    "year": 2004,
+    "artist": "Usher",
+    "title": "Yeah!"
+  },
+  {
+    "year": 2005,
+    "artist": "Crazy Frog",
+    "title": "Axel F"
+  },
+  {
+    "year": 2005,
+    "artist": "Madonna",
+    "title": "Hung Up"
+  },
+  {
+    "year": 2005,
+    "artist": "James Blunt",
+    "title": "You're Beautiful"
+  },
+  {
+    "year": 2006,
+    "artist": "Nelly Furtado",
+    "title": "All Good Things (Come to an End)"
+  },
+  {
+    "year": 2006,
+    "artist": "Gnarls Barkley",
+    "title": "Crazy"
+  },
+  {
+    "year": 2006,
+    "artist": "Shakira feat. Wyclef Jean",
+    "title": "Hips Don't Lie"
+  },
+  {
+    "year": 2007,
+    "artist": "Fixkes",
+    "title": "Kvraagetaan"
+  },
+  {
+    "year": 2007,
+    "artist": "Mika",
+    "title": "Grace Kelly"
+  },
+  {
+    "year": 2007,
+    "artist": "Rihanna",
+    "title": "Umbrella"
+  },
+  {
+    "year": 2008,
+    "artist": "Katy Perry",
+    "title": "I Kissed a Girl"
+  },
+  {
+    "year": 2008,
+    "artist": "Amy Macdonald",
+    "title": "This Is the Life"
+  },
+  {
+    "year": 2008,
+    "artist": "Coldplay",
+    "title": "Viva la Vida"
+  },
+  {
+    "year": 2009,
+    "artist": "Lady Gaga",
+    "title": "Poker Face"
+  },
+  {
+    "year": 2009,
+    "artist": "David Guetta feat. Kelly Rowland",
+    "title": "When Love Takes Over"
+  },
+  {
+    "year": 2009,
+    "artist": "The Black Eyed Peas",
+    "title": "I Gotta Feeling"
+  },
+  {
+    "year": 2010,
+    "artist": "Stromae",
+    "title": "Alors on danse"
+  },
+  {
+    "year": 2010,
+    "artist": "Yolanda Be Cool & DCUP",
+    "title": "We No Speak Americano"
+  },
+  {
+    "year": 2010,
+    "artist": "Rihanna",
+    "title": "Only Girl (In the World)"
+  },
+  {
+    "year": 2011,
+    "artist": "Adele",
+    "title": "Rolling in the Deep"
+  },
+  {
+    "year": 2011,
+    "artist": "Gotye feat. Kimbra",
+    "title": "Somebody That I Used to Know"
+  },
+  {
+    "year": 2011,
+    "artist": "LMFAO",
+    "title": "Party Rock Anthem"
+  },
+  {
+    "year": 2012,
+    "artist": "PSY",
+    "title": "Gangnam Style"
+  },
+  {
+    "year": 2012,
+    "artist": "Michel Teló",
+    "title": "Ai se eu te pego!"
+  },
+  {
+    "year": 2012,
+    "artist": "Gusttavo Lima",
+    "title": "Balada"
+  },
+  {
+    "year": 2013,
+    "artist": "Avicii",
+    "title": "Wake Me Up!"
+  },
+  {
+    "year": 2013,
+    "artist": "Daft Punk feat. Pharrell Williams",
+    "title": "Get Lucky"
+  },
+  {
+    "year": 2013,
+    "artist": "Robin Thicke feat. T.I. & Pharrell",
+    "title": "Blurred Lines"
+  },
+  {
+    "year": 2014,
+    "artist": "Pharrell Williams",
+    "title": "Happy"
+  },
+  {
+    "year": 2014,
+    "artist": "Clean Bandit feat. Jess Glynne",
+    "title": "Rather Be"
+  },
+  {
+    "year": 2014,
+    "artist": "Lilly Wood & The Prick and Robin Schulz",
+    "title": "Prayer in C"
+  },
+  {
+    "year": 2015,
+    "artist": "Lost Frequencies",
+    "title": "Are You with Me"
+  },
+  {
+    "year": 2015,
+    "artist": "Major Lazer & DJ Snake feat. MØ",
+    "title": "Lean On"
+  },
+  {
+    "year": 2015,
+    "artist": "Adele",
+    "title": "Hello"
+  },
+  {
+    "year": 2016,
+    "artist": "Drake feat. Wizkid & Kyla",
+    "title": "One Dance"
+  },
+  {
+    "year": 2016,
+    "artist": "Justin Timberlake",
+    "title": "Can't Stop the Feeling!"
+  },
+  {
+    "year": 2016,
+    "artist": "The Chainsmokers feat. Halsey",
+    "title": "Closer"
+  },
+  {
+    "year": 2017,
+    "artist": "Ed Sheeran",
+    "title": "Shape of You"
+  },
+  {
+    "year": 2017,
+    "artist": "Luis Fonsi & Daddy Yankee",
+    "title": "Despacito"
+  },
+  {
+    "year": 2017,
+    "artist": "Dua Lipa",
+    "title": "New Rules"
+  },
+  {
+    "year": 2018,
+    "artist": "Calvin Harris & Dua Lipa",
+    "title": "One Kiss"
+  },
+  {
+    "year": 2018,
+    "artist": "George Ezra",
+    "title": "Shotgun"
+  },
+  {
+    "year": 2018,
+    "artist": "Dynoro & Gigi D'Agostino",
+    "title": "In My Mind"
+  },
+  {
+    "year": 2019,
+    "artist": "Tones and I",
+    "title": "Dance Monkey"
+  },
+  {
+    "year": 2019,
+    "artist": "Lil Nas X",
+    "title": "Old Town Road"
+  },
+  {
+    "year": 2019,
+    "artist": "Billie Eilish",
+    "title": "Bad Guy"
+  },
+  {
+    "year": 2020,
+    "artist": "The Weeknd",
+    "title": "Blinding Lights"
+  },
+  {
+    "year": 2020,
+    "artist": "SAINt JHN",
+    "title": "Roses (Imanbek Remix)"
+  },
+  {
+    "year": 2020,
+    "artist": "24kGoldn feat. Iann Dior",
+    "title": "Mood"
+  },
+  {
+    "year": 2021,
+    "artist": "Måneskin",
+    "title": "I Wanna Be Your Slave"
+  },
+  {
+    "year": 2021,
+    "artist": "Ed Sheeran",
+    "title": "Bad Habits"
+  },
+  {
+    "year": 2021,
+    "artist": "Olivia Rodrigo",
+    "title": "Drivers License"
+  },
+  {
+    "year": 2022,
+    "artist": "Harry Styles",
+    "title": "As It Was"
+  },
+  {
+    "year": 2022,
+    "artist": "Rosa Linn",
+    "title": "Snap"
+  },
+  {
+    "year": 2022,
+    "artist": "David Guetta & Bebe Rexha",
+    "title": "I'm Good (Blue)"
+  },
+  {
+    "year": 2023,
+    "artist": "Miley Cyrus",
+    "title": "Flowers"
+  },
+  {
+    "year": 2023,
+    "artist": "Loreen",
+    "title": "Tattoo"
+  },
+  {
+    "year": 2023,
+    "artist": "Pommelien Thijs",
+    "title": "Erop of eronder"
+  },
+  {
+    "year": 2024,
+    "artist": "Pommelien Thijs",
+    "title": "Het beste moet nog komen"
+  },
+  {
+    "year": 2024,
+    "artist": "Benson Boone",
+    "title": "Beautiful Things"
+  },
+  {
+    "year": 2024,
+    "artist": "Sabrina Carpenter",
+    "title": "Espresso"
+  },
+  {
+    "year": 2025,
+    "artist": "Pommelien Thijs",
+    "title": "Atlas"
+  },
+  {
+    "year": 2025,
+    "artist": "Alex Warren",
+    "title": "Ordinary"
+  },
+  {
+    "year": 2025,
+    "artist": "ROSÉ & Bruno Mars",
+    "title": "APT."
+  }
+]

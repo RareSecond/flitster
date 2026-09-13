@@ -1,11 +1,15 @@
 import { useMemo, useState } from 'react'
 import { getCurrentlyPlaying, getPlaylistTracks, searchTracks, type TrackMatch } from '../lib/spotifyApi'
 import { loadDeck } from '../lib/deck'
+import belgianSongs from '../lib/belgianSongs.json'
+import { parseSongs } from '../lib/songImport'
+import { SongImport } from './SongImport'
 import {
   activeIds,
   addTracks,
   coverage,
   createPlaylist,
+  createSongPlaylist,
   deletePlaylist,
   exportPlaylists,
   importPlaylists,
@@ -146,6 +150,30 @@ export function PlaylistScreen({ onBack }: { onBack: () => void }) {
         </button>
       </div>
 
+      <button className="primary" onClick={() => {
+        try {
+          const id = createSongPlaylist('Belgian Hitster 1960–2025', parseSongs(belgianSongs), 'belgian-hitster-1960-2025')
+          setLists(loadPlaylists())
+          setSelectedId(id)
+          if (!activeIds().includes(id)) setActive(toggleActive(id))
+        } catch (e) { setMessage(String(e)) }
+      }}>Import Belgian Hitster ({belgianSongs.length} songs)</button>
+
+      <label className="hint">Import another song-list JSON
+        <input type="file" accept=".json,application/json" onChange={async e => {
+          const file = e.target.files?.[0]
+          e.target.value = ''
+          if (!file) return
+          try {
+            const songs = parseSongs(JSON.parse(await file.text()))
+            const id = createSongPlaylist(file.name.replace(/\.json$/i, ''), songs)
+            setLists(loadPlaylists())
+            setSelectedId(id)
+            setActive(toggleActive(id))
+          } catch (error) { setMessage(`Import failed: ${String(error)}`) }
+        }} />
+      </label>
+
       {Object.keys(deck).length > 0 && (
         <>
           <h2>Coverage</h2>
@@ -172,6 +200,7 @@ export function PlaylistScreen({ onBack }: { onBack: () => void }) {
       {selected && (
         <>
           <h2>Editing “{selected.name}”</h2>
+          {selected.importSongs && <SongImport key={selected.id} playlist={selected} onChange={setLists} />}
 
           <button className="ghost wide" onClick={addFromCurrent} disabled={busy}>
             Add what's playing on Spotify

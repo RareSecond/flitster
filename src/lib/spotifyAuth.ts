@@ -17,7 +17,8 @@ export const SCOPES = [
 ].join(' ')
 
 export const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined
-export const REDIRECT_URI = `${window.location.origin}/`
+// Resolve only when called in the browser, never during server module loading.
+const redirectUri = () => `${window.location.origin}/`
 
 type Tokens = { access_token: string; refresh_token?: string; expires_at: number }
 
@@ -66,7 +67,7 @@ export async function login() {
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
     response_type: 'code',
-    redirect_uri: REDIRECT_URI,
+    redirect_uri: redirectUri(),
     scope: SCOPES,
     code_challenge_method: 'S256',
     code_challenge: challenge,
@@ -80,13 +81,13 @@ export async function handleRedirect(): Promise<boolean> {
   const code = url.searchParams.get('code')
   const error = url.searchParams.get('error')
   if (error) {
-    history.replaceState({}, '', url.pathname)
+    history.replaceState(history.state, '', url.pathname)
     throw new Error(`Spotify auth error: ${error}`)
   }
   if (!code) return false
 
   const verifier = sessionStorage.getItem(VERIFIER_KEY)
-  history.replaceState({}, '', url.pathname)
+  history.replaceState(history.state, '', url.pathname)
   if (!verifier || !CLIENT_ID) return false
 
   const res = await fetch(TOKEN_URL, {
@@ -96,7 +97,7 @@ export async function handleRedirect(): Promise<boolean> {
       client_id: CLIENT_ID,
       grant_type: 'authorization_code',
       code,
-      redirect_uri: REDIRECT_URI,
+      redirect_uri: redirectUri(),
       code_verifier: verifier,
     }),
   })

@@ -10,18 +10,24 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "node --experimental-strip-types server/seed.mjs",
     "test": "node --test tests/*.test.mjs",
+    "test:production": "node --test tests/integration/*.test.mjs",
     "dev": "vite --host",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview --host"
+    "build": "vite build && tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview --host",
+    "start": "node server/serve.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "@tanstack/react-router": "^1.170.36",
+    "@tanstack/react-start": "^1.168.53",
     "dotenv": "^17.4.2",
     "jsqr": "^1.4.0",
     "pg": "^8.23.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "srvx": "^1.0.4"
   },
   "devDependencies": {
     "@types/node": "^26.5.1",

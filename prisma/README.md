@@ -51,9 +51,9 @@ or overwrite edits. The seed activates the imported list for its owner.
 ## Server integration
 
 `server/db.mjs` provides a Prisma client for Node server/CLI code. It is not
-imported by the browser. TanStack Start has not been installed or configured.
-When that migration happens, database operations belong inside authenticated
-server functions, not browser event handlers. The generated client is ignored
+imported by the browser. TanStack Start runs in SPA mode. Future shared-data
+fetches and writes belong in authenticated Start server functions; the UI and
+game logic remain client-side. The generated client is ignored
 by Git and must be regenerated during server build setup.
 
 Installation audit reports advisories in Prisma CLI development dependencies

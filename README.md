@@ -34,6 +34,16 @@ Working: deck capture, playlist pools with Spotify import/search, multi-playlist
 activation, per-year coverage warnings, QR scanning, flip-to-play, and both
 playback paths (in-app 30s preview, or remote-controlling the Spotify app).
 
+## Stack
+
+TanStack Start runs in [SPA mode](https://tanstack.com/start/latest/docs/framework/react/guide/spa-mode).
+The document shell is generated once at build time; screens, routing, game logic,
+device APIs, local storage, and Spotify PKCE run in the browser. Routes are `/`,
+`/deck`, and `/playlists`. The shared app layout preserves game state between screens.
+
+Reserve Start server functions for fetching or creating shared data. The existing
+Prisma client remains server-only; this migration does not change data storage.
+
 ## Running it
 
 ```bash
@@ -42,12 +52,39 @@ cp .env.example .env.local   # add a Spotify client id
 npm run dev
 ```
 
-Open `https://192.168.1.11:5173/` on the phone and accept the self-signed cert.
+Open `https://<your-LAN-IP>:5173/` on the phone and accept the self-signed cert.
 HTTPS is not optional — camera and motion sensors both need a secure context.
 Register that exact URL as the redirect URI in the Spotify dashboard.
 
 Tap **debug** for a live capability and sensor readout; that panel is how the PWA
 question gets answered.
+
+### Production
+
+```bash
+npm run build       # client/server bundles, SPA shell, PWA cache, type check
+npm start           # http://localhost:3000; HOST and PORT are configurable
+```
+
+Use Node.js 22.12+ (or a newer supported release). Production phone access needs
+an HTTPS reverse proxy. Keep the same public origin to retain browser data and
+the registered Spotify redirect URI.
+
+The production host serves `dist/client` and the static SPA shell. Only
+`/_serverFn/*` and `/api/*` requests reach the Start server handler. To deploy,
+include `dist`, `server/serve.mjs`, `package.json`, `package-lock.json`, and install
+production dependencies. `npm run preview` provides a local build preview.
+
+Static hosting can serve `dist/client` with a fallback to `/_shell.html`.
+When data actions are added, route `/_serverFn/*` and `/api/*` to the Node host
+before applying that fallback.
+
+The service worker precaches the generated shell and all screen chunks for offline
+navigation. Spotify API calls and playback still require connectivity. Service
+worker generation runs after Start's shell generation so the cache is complete.
+
+Validation: `npm test`, `npm run typecheck`, and (after building)
+`npm run test:production`.
 
 ## The two things that decide the outcome
 
@@ -90,4 +127,4 @@ authored on a laptop. Also missing: players, scoring, timeline placement.
 Prisma and the Neon database schema are now set up, with the captured deck and
 accepted Belgian list imported. See [database setup](prisma/README.md) for the
 model, migrations, and seed commands. Connecting the UI and adding authentication
-are the next steps; this project currently uses React/Vite, not TanStack Start.
+are the next steps; TanStack Start is configured for client-side rendering.

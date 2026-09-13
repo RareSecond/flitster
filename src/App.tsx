@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
+import { Outlet, useLocation, useNavigate } from '@tanstack/react-router'
 import { useQrScanner } from './hooks/useQrScanner'
 import { useFlipDetector } from './hooks/useFlipDetector'
 import { useAudioPreview } from './hooks/useAudioPreview'
@@ -14,11 +15,8 @@ import {
 import { PROBE_TRACK_URI } from './lib/tracks'
 import { loadDeck, shortCode } from './lib/deck'
 import { activeIds, pickTrack, type PlaylistTrack } from './lib/playlists'
-import { DeckScreen } from './components/DeckScreen'
-import { PlaylistScreen } from './components/PlaylistScreen'
 
 type Phase = 'idle' | 'scanning' | 'armed' | 'playing' | 'error'
-type Screen = 'play' | 'deck' | 'playlists'
 
 /** 'preview' plays a 30s clip in-app; 'connect' remote-controls the Spotify app. */
 type Mode = 'preview' | 'connect'
@@ -34,7 +32,9 @@ type Round = { code: string; year: number; track: PlaylistTrack; repeat: boolean
 
 export default function App() {
   const [phase, setPhase] = useState<Phase>('idle')
-  const [screen, setScreen] = useState<Screen>('play')
+  const pathname = useLocation({ select: (location) => location.pathname })
+  const navigate = useNavigate()
+  const isPlayScreen = pathname === '/'
   const [round, setRound] = useState<Round | null>(null)
   const [revealed, setRevealed] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -195,6 +195,14 @@ export default function App() {
     setPhase('idle')
   }, [audio, mode, scanner])
 
+  const stopRoundOnNavigation = useEffectEvent(() => {
+    if (phase !== 'idle') void reset()
+  })
+  useEffect(() => {
+    // Browser back/forward can leave the play screen during an active round.
+    if (!isPlayScreen) stopRoundOnNavigation()
+  }, [isPlayScreen])
+
   const deckSize = Object.keys(loadDeck()).length
   const activeCount = activeIds().length
 
@@ -219,18 +227,17 @@ export default function App() {
         </button>
       )}
 
-      {loggedIn && screen === 'deck' && <DeckScreen onBack={() => setScreen('play')} />}
-      {loggedIn && screen === 'playlists' && <PlaylistScreen onBack={() => setScreen('play')} />}
+      {loggedIn && <Outlet />}
 
-      {loggedIn && screen === 'play' && (
+      {loggedIn && isPlayScreen && (
         <>
           {phase === 'idle' && (
             <div className="stage">
               <div className="row">
-                <button className="ghost wide" onClick={() => setScreen('deck')}>
+                <button className="ghost wide" onClick={() => navigate({ to: '/deck' })}>
                   Deck ({deckSize})
                 </button>
-                <button className="ghost wide" onClick={() => setScreen('playlists')}>
+                <button className="ghost wide" onClick={() => navigate({ to: '/playlists' })}>
                   Playlists ({activeCount} on)
                 </button>
               </div>

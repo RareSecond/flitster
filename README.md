@@ -110,11 +110,16 @@ The current deployment edits one shared personal library, selected server-side b
 `LIBRARY_OWNER_ID` (defaults to `SEED_OWNER_ID`, then `personal-import`). Activations
 are shared for that owner. Other owners' lists can be viewed and activated but not
 edited. There is no Spotify account connection.
-Run this personal deployment behind trusted/private access until app authentication
-is added.
+The Codictive deployment is intentionally public without authentication. Anyone
+who can reach its URL can view and edit this shared library.
 
 The app no longer stores data in localStorage. Existing `flitster.*` entries are
 removed on startup without importing or overwriting the database. Legacy Spotify session entries are also removed on startup. No new browser tokens
 or preferences are persisted.
 
 See [database setup](prisma/README.md) for migrations and seed commands.
+
+### Codictive VPS
+
+See [deployment instructions](deploy/README.md) for Docker packaging, the paired
+Codictive infrastructure changes, image uploads, public routing, and rollback.

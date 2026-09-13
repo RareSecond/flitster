@@ -1,0 +1,12 @@
+.git
+.github
+.claude
+node_modules
+dist
+dev-dist
+.tanstack
+*.tsbuildinfo
+.env
+.env.*
+server/generated
+deploy/*.tar*

@@ -79,3 +79,13 @@ test('missing assets and API requests never fall back to the SPA document', asyn
   const response = await fetch(`${origin}/deck`, { method: 'POST' })
   assert.equal(response.status, 404)
 })
+
+test('health endpoint returns JSON and is never cached', async () => {
+  const response = await fetch(`${origin}/api/health`)
+  assert.equal(response.status, 200)
+  assert.equal(response.headers.get('cache-control'), 'no-store')
+  assert.deepEqual(await response.json(), { status: 'ok' })
+  const head = await fetch(`${origin}/api/health`, { method: 'HEAD' })
+  assert.equal(head.status, 200)
+  assert.equal(await head.text(), '')
+})

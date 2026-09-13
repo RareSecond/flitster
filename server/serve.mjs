@@ -13,6 +13,11 @@ serve({
   middleware: [staticMiddleware({ dir: publicDir, maxAge: 0 })],
   fetch(request) {
     const { pathname } = new URL(request.url)
+    if (pathname === '/api/health' && ['GET', 'HEAD'].includes(request.method)) {
+      return new Response(request.method === 'HEAD' ? null : JSON.stringify({ status: 'ok' }), {
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      })
+    }
     // Only data actions/API requests need the Start server runtime.
     if (pathname.startsWith('/_serverFn/') || pathname.startsWith('/api/')) {
       return start.fetch(request)

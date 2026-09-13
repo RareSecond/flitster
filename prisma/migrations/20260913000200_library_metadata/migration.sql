@@ -1,0 +1,4 @@
+ALTER TABLE "List" ADD COLUMN "createdAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                   ADD COLUMN "importSongs" JSONB;
+ALTER TABLE "Song" ADD COLUMN "spotifyYear" INTEGER,
+                   ADD COLUMN "albumName" TEXT NOT NULL DEFAULT '';

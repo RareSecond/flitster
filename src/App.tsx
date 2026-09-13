@@ -1,36 +1,42 @@
+import { useLibrary } from './hooks/useLibrary'
+import { getLibrary } from './lib/library.functions'
+import { setDatabaseLibrary } from './lib/library'
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from '@tanstack/react-router'
 import { useQrScanner } from './hooks/useQrScanner'
 import { useFlipDetector } from './hooks/useFlipDetector'
 import { useAudioPreview } from './hooks/useAudioPreview'
 import { probeCapabilities } from './lib/capabilities'
-import { CLIENT_ID, handleRedirect, isLoggedIn, login, logout } from './lib/spotifyAuth'
-import {
-  NoActiveDeviceError,
-  getTrack,
-  openInSpotifyApp,
-  pausePlayback,
-  playTrack,
-} from './lib/spotifyApi'
-import { PROBE_TRACK_URI } from './lib/tracks'
 import { loadDeck, shortCode } from './lib/deck'
 import { activeIds, pickTrack, type PlaylistTrack } from './lib/playlists'
 
 type Phase = 'idle' | 'scanning' | 'armed' | 'playing' | 'error'
 
-/** 'preview' plays a 30s clip in-app; 'connect' remote-controls the Spotify app. */
-type Mode = 'preview' | 'connect'
-
-type PreviewProbe =
-  | { state: 'idle' }
-  | { state: 'checking' }
-  | { state: 'done'; url: string | null }
-  | { state: 'failed'; error: string }
-
 /** One scanned card: the year comes from the deck, the track from the pools. */
 type Round = { code: string; year: number; track: PlaylistTrack; repeat: boolean }
 
 export default function App() {
+  useLibrary()
+  const [libraryState, setLibraryState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const loadLibrary = useCallback(async () => {
+    setLibraryState('loading')
+    try {
+      setDatabaseLibrary(await getLibrary())
+      setLibraryState('ready')
+    } catch { setLibraryState('error') }
+  }, [])
+  useEffect(() => {
+    // Retire the old app-owned data without touching unrelated origin keys.
+    try {
+      for (const key of Object.keys(sessionStorage)) {
+        if (key.startsWith('flitster.spotify.')) sessionStorage.removeItem(key)
+      }
+      for (const key of Object.keys(localStorage)) {
+        if (key.startsWith('flitster.')) localStorage.removeItem(key)
+      }
+    } catch { /* Browser storage may be disabled. The database still works. */ }
+    void loadLibrary()
+  }, [loadLibrary])
   const [phase, setPhase] = useState<Phase>('idle')
   const pathname = useLocation({ select: (location) => location.pathname })
   const navigate = useNavigate()
@@ -38,12 +44,7 @@ export default function App() {
   const [round, setRound] = useState<Round | null>(null)
   const [revealed, setRevealed] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
-  const [loggedIn, setLoggedIn] = useState(isLoggedIn)
   const [showDebug, setShowDebug] = useState(false)
-  const [previewProbe, setPreviewProbe] = useState<PreviewProbe>({ state: 'idle' })
-  const [mode, setMode] = useState<Mode>(
-    () => (localStorage.getItem('flitster.mode') as Mode | null) ?? 'preview',
-  )
   const capabilities = useMemo(probeCapabilities, [])
   const audio = useAudioPreview()
 
@@ -57,64 +58,15 @@ export default function App() {
   // The flip fires from a sensor event that closed over an earlier render.
   const roundRef = useRef<Round | null>(null)
   roundRef.current = round
-  const modeRef = useRef<Mode>(mode)
-  modeRef.current = mode
-
-  useEffect(() => {
-    localStorage.setItem('flitster.mode', mode)
-  }, [mode])
-
-  useEffect(() => {
-    handleRedirect()
-      .then((did) => did && setLoggedIn(true))
-      .catch((e) => setMessage(String(e)))
-  }, [])
-
-  // Settles "can this client id still get 30s previews?" empirically, rather
-  // than us guessing from Spotify's deprecation notes.
-  useEffect(() => {
-    if (!loggedIn) return
-    let cancelled = false
-    setPreviewProbe({ state: 'checking' })
-    getTrack(PROBE_TRACK_URI)
-      .then((t) => !cancelled && setPreviewProbe({ state: 'done', url: t.preview_url }))
-      .catch((e) => !cancelled && setPreviewProbe({ state: 'failed', error: String(e) }))
-    return () => {
-      cancelled = true
-    }
-  }, [loggedIn])
-
   const startPlayback = useCallback(async () => {
     const current = roundRef.current
-    if (!current) return
+    const url = previewUrlRef.current
+    if (!current || !url) return
     setPhase('playing')
-
-    if (modeRef.current === 'preview') {
-      const url = previewUrlRef.current
-      if (!url) {
-        setPhase('error')
-        setMessage('No preview available for this track — switch to Full track mode.')
-        return
-      }
-      const ok = await audio.play(url, { title: current.track.title, artist: current.track.artist })
-      if (!ok) {
-        setPhase('error')
-        setMessage('Preview blocked — the audio unlock did not survive to the flip.')
-      }
-      return
-    }
-
-    try {
-      await playTrack(current.track.uri)
-      setMessage(null)
-    } catch (e) {
-      if (e instanceof NoActiveDeviceError) {
-        setMessage('No active Spotify device — handing off to the Spotify app.')
-        openInSpotifyApp(current.track.uri)
-      } else {
-        setPhase('error')
-        setMessage(String(e))
-      }
+    const ok = await audio.play(url, { title: current.track.title, artist: current.track.artist })
+    if (!ok) {
+      setPhase('error')
+      setMessage('Could not play this preview. Check the saved preview URL and try again.')
     }
   }, [audio])
 
@@ -132,7 +84,11 @@ export default function App() {
       }
       const drawn = pickTrack(card.year, usedRef.current)
       if (!drawn) {
-        setMessage(`No track for ${card.year} in the active playlists.`)
+        setMessage(`No playable preview for ${card.year}. Add a preview URL to a song in an active playlist.`)
+        return
+      }
+      if (!drawn.track.previewUrl) {
+        setMessage('This song has no preview URL. Add one in Playlists before playing.')
         return
       }
       claimedRef.current = true
@@ -142,14 +98,7 @@ export default function App() {
       setRound({ code, year: card.year, track: drawn.track, repeat: drawn.repeat })
       setPhase('armed')
 
-      previewUrlRef.current = null
-      if (modeRef.current === 'preview') {
-        getTrack(drawn.track.uri)
-          .then((t) => {
-            previewUrlRef.current = t.preview_url
-          })
-          .catch(() => undefined)
-      }
+      previewUrlRef.current = drawn.track.previewUrl
     }, []),
   )
   stopRef.current = scanner.stop
@@ -162,7 +111,7 @@ export default function App() {
     previewUrlRef.current = null
     // Both must happen inside the tap: iOS gates audio playback and the motion
     // sensors on user activation.
-    if (mode === 'preview') await audio.primeFromGesture()
+    await audio.primeFromGesture()
     if (flip.permission === 'unknown') {
       const ok = await flip.requestPermission()
       if (!ok) setMessage('Motion permission denied — flip detection will not fire.')
@@ -179,12 +128,11 @@ export default function App() {
     }
     setPhase('scanning')
     await scanner.start()
-  }, [audio, flip, mode, scanner])
+  }, [audio, flip, scanner])
 
   const reset = useCallback(async () => {
     scanner.stop()
     audio.stop()
-    if (mode === 'connect') await pausePlayback()
     await wakeLockRef.current?.release().catch(() => undefined)
     wakeLockRef.current = null
     claimedRef.current = false
@@ -193,7 +141,7 @@ export default function App() {
     setRevealed(false)
     setMessage(null)
     setPhase('idle')
-  }, [audio, mode, scanner])
+  }, [audio, scanner])
 
   const stopRoundOnNavigation = useEffectEvent(() => {
     if (phase !== 'idle') void reset()
@@ -215,21 +163,11 @@ export default function App() {
         </button>
       </header>
 
-      {!CLIENT_ID && (
-        <p className="banner warn">
-          Set <code>VITE_SPOTIFY_CLIENT_ID</code> in <code>.env.local</code> to enable playback.
-        </p>
-      )}
+      {libraryState === 'loading' && <p role="status" className="hint">Loading the library…</p>}
+      {libraryState === 'error' && <div role="alert" className="banner warn">Could not load the database library. Check your connection and try again. <button onClick={loadLibrary}>Retry</button></div>}
+      {libraryState === 'ready' && <Outlet />}
 
-      {CLIENT_ID && !loggedIn && (
-        <button className="primary" onClick={() => login().catch((e) => setMessage(String(e)))}>
-          Connect Spotify
-        </button>
-      )}
-
-      {loggedIn && <Outlet />}
-
-      {loggedIn && isPlayScreen && (
+      {libraryState === 'ready' && isPlayScreen && (
         <>
           {phase === 'idle' && (
             <div className="stage">
@@ -242,23 +180,8 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="modes">
-                <button
-                  className={mode === 'preview' ? 'seg on' : 'seg'}
-                  onClick={() => setMode('preview')}
-                >
-                  30s preview
-                </button>
-                <button
-                  className={mode === 'connect' ? 'seg on' : 'seg'}
-                  onClick={() => setMode('connect')}
-                >
-                  Full track
-                </button>
-              </div>
-
               <p className="hint">Scan a card, then turn your phone face-down to hear the track.</p>
-              <button className="primary" onClick={beginRound} disabled={deckSize === 0}>
+              <button className="primary" onClick={beginRound} disabled={deckSize === 0 || activeCount === 0}>
                 Scan a card
               </button>
               {deckSize === 0 && <p className="hint">Capture your deck first.</p>}
@@ -338,28 +261,6 @@ export default function App() {
             ))}
           </ul>
 
-          <h2>Spotify 30s preview</h2>
-          <ul>
-            <li>
-              preview_url
-              <em>
-                {previewProbe.state === 'idle' && 'not logged in'}
-                {previewProbe.state === 'checking' && 'checking…'}
-                {previewProbe.state === 'failed' && previewProbe.error}
-                {previewProbe.state === 'done' &&
-                  (previewProbe.url ? 'available' : 'null — deprecated for this app')}
-              </em>
-            </li>
-            {previewProbe.state === 'done' && (
-              <li>
-                verdict
-                <em className={previewProbe.url ? 'ok' : 'no'}>
-                  {previewProbe.url ? 'in-app <audio> works' : 'Connect remote-control only'}
-                </em>
-              </li>
-            )}
-          </ul>
-
           <h2>In-app audio</h2>
           <ul>
             <li>
@@ -387,17 +288,6 @@ export default function App() {
             <li>phase<em>{phase}</em></li>
           </ul>
 
-          {loggedIn && (
-            <button
-              className="ghost wide"
-              onClick={() => {
-                logout()
-                setLoggedIn(false)
-              }}
-            >
-              Disconnect Spotify
-            </button>
-          )}
         </section>
       )}
     </div>

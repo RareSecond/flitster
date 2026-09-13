@@ -12,10 +12,11 @@
     "test": "node --test tests/*.test.mjs",
     "test:production": "node --test tests/integration/*.test.mjs",
     "dev": "vite --host",
-    "build": "vite build && tsc --noEmit",
+    "build": "npm run db:generate && vite build && tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview --host",
-    "start": "node server/serve.mjs"
+    "start": "node server/serve.mjs",
+    "test:database": "TEST_DATABASE=1 node --test tests/integration/database.test.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

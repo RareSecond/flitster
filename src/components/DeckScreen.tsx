@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useLibrary } from '../hooks/useLibrary'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQrScanner } from '../hooks/useQrScanner'
 import {
   addCard,
@@ -15,6 +16,9 @@ import {
 const COOLDOWN_MS = 2500
 
 export function DeckScreen({ onBack }: { onBack: () => void }) {
+  const library = useLibrary()
+  useEffect(() => { setDeck(loadDeck()) }, [library])
+  const [busy, setBusy] = useState(false)
   const [deck, setDeck] = useState<Deck>(loadDeck)
   const [pending, setPending] = useState<string | null>(null)
   const [digits, setDigits] = useState('')
@@ -43,18 +47,19 @@ export function DeckScreen({ onBack }: { onBack: () => void }) {
   const total = Object.keys(deck).length
 
   const commit = useCallback(
-    (year: string) => {
+    async (year: string) => {
       const code = pendingRef.current
       const parsed = Number(year)
-      if (!code || !parsed) return
-      setDeck(addCard(code, parsed))
+      if (!code || parsed < 1000 || parsed > 9999 || busy) return
+      setBusy(true)
+      try { setDeck(await addCard(code, parsed)) } catch (e) { setMessage(String(e)); return } finally { setBusy(false) }
       setToast(`${parsed} · ${shortCode(code)}`)
       cooldownRef.current = { code, until: Date.now() + COOLDOWN_MS }
       pendingRef.current = null
       setPending(null)
       setDigits('')
     },
-    [],
+    [busy],
   )
 
   const press = (d: string) => {
@@ -83,13 +88,14 @@ export function DeckScreen({ onBack }: { onBack: () => void }) {
   }
 
   const doImport = async () => {
+    setBusy(true)
     try {
-      const n = importDeck(await navigator.clipboard.readText())
+      const n = await importDeck(await navigator.clipboard.readText())
       setDeck(loadDeck())
       setMessage(`Imported ${n} cards.`)
     } catch (e) {
       setMessage(`Import failed: ${e}`)
-    }
+    } finally { setBusy(false) }
   }
 
   const existing = pending ? deck[pending] : undefined
@@ -105,7 +111,7 @@ export function DeckScreen({ onBack }: { onBack: () => void }) {
 
       <p className="hint">
         Scan each card and type the year printed on it. This captures the physical deck once;
-        which song plays is decided by your playlists.
+        which song plays is decided by your playlists. Cards and changes are saved in the shared database.
       </p>
 
       <div className={`camera ${scanner.active ? 'live' : ''}`}>
@@ -133,7 +139,7 @@ export function DeckScreen({ onBack }: { onBack: () => void }) {
 
           <div className="yearDisplay">{digits.padEnd(4, '·')}</div>
 
-          <div className="pad">
+          <fieldset className="pad" disabled={busy} style={{ border: 0, padding: 0 }}>
             {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
               <button key={d} className="key" onClick={() => press(d)}>
                 {d}
@@ -148,7 +154,7 @@ export function DeckScreen({ onBack }: { onBack: () => void }) {
             <button className="key ghost" onClick={() => setDigits(digits.slice(0, -1))}>
               ⌫
             </button>
-          </div>
+          </fieldset>
         </>
       )}
 
@@ -170,7 +176,10 @@ export function DeckScreen({ onBack }: { onBack: () => void }) {
                   </span>
                   <em>{cards.map((c) => shortCode(c.code)).join(', ')}</em>
                 </div>
-                <button className="ghost small" onClick={() => setDeck(removeCard(cards[0].code))}>
+                <button disabled={busy} className="ghost small" onClick={async () => {
+                  setBusy(true)
+                  try { setDeck(await removeCard(cards[0].code)) } catch (e) { setMessage(String(e)) } finally { setBusy(false) }
+                }}>
                   ✕
                 </button>
               </li>
@@ -180,7 +189,7 @@ export function DeckScreen({ onBack }: { onBack: () => void }) {
             <button className="ghost wide" onClick={doExport}>
               Export deck
             </button>
-            <button className="ghost wide" onClick={doImport}>
+            <button className="ghost wide" disabled={busy} onClick={doImport}>
               Import
             </button>
           </div>

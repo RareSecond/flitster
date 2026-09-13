@@ -1,8 +1,6 @@
+import { databaseLibrary, persistLibrary } from './library'
 import type { Deck } from './deck'
 import { byYear } from './deck'
-import type { ImportSong } from './songImport'
-import { exactMatch, importedTrack } from './songImport'
-import type { TrackMatch } from './spotifyApi'
 
 /**
  * A playlist is a *pool of tracks bucketed by year*, not a per-card mapping.
@@ -11,10 +9,10 @@ import type { TrackMatch } from './spotifyApi'
  * what lets several playlists be combined, and the same deck to be replayed with
  * completely different music.
  */
-const KEY = 'flitster.playlists'
-const ACTIVE_KEY = 'flitster.activePlaylists'
 
 export type PlaylistTrack = {
+  id?: string
+  previewUrl?: string | null
   uri: string
   title: string
   artist: string
@@ -26,75 +24,30 @@ export type PlaylistTrack = {
 }
 
 export type Playlist = {
+  readOnly?: boolean
   id: string
   name: string
   tracks: PlaylistTrack[]
   createdAt: string
-  importSongs?: ImportSong[]
+  // Historical import progress is retained for database/export compatibility.
+  importSongs?: Array<{
+    artist: string; title: string; year: number; status: 'pending' | 'review' | 'added' | 'skipped'
+    candidates?: Array<{ uri: string; title: string; artist: string; albumName: string; albumType: string; releaseDate: string; year: number }>
+  }>
 }
 
 export type Playlists = Record<string, Playlist>
 
-export function loadPlaylists(): Playlists {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) ?? '{}') as Playlists
-  } catch {
-    return {}
-  }
-}
+export const loadPlaylists = (): Playlists => structuredClone(databaseLibrary().playlists)
 
-const persist = (p: Playlists) => {
-  localStorage.setItem(KEY, JSON.stringify(p))
-  return p
-}
+const persist = async (playlists: Playlists): Promise<Playlists> =>
+  (await persistLibrary({ ...databaseLibrary(), playlists,
+    activeIds: activeIds().filter(id => !!playlists[id]),
+  })).playlists
 
-const newId = () => Math.random().toString(36).slice(2, 10)
+const newId = () => crypto.randomUUID()
 
-export function acceptImportMatches(id: string): { playlists: Playlists; accepted: number; remaining: number } {
-  const all = loadPlaylists()
-  const list = all[id]
-  if (!list) throw new Error('Import playlist no longer exists.')
-  let accepted = 0
-  for (const song of list.importSongs ?? []) {
-    if (song.status !== 'review') continue
-    const match = exactMatch(song, song.candidates ?? [])
-    if (!match) continue
-    const existing = list.tracks.find(t => t.uri === match.uri)
-    if (existing && existing.year !== song.year) continue
-    if (!existing) list.tracks.push(importedTrack(song, match))
-    song.status = 'added'
-    delete song.candidates
-    accepted++
-  }
-  return { playlists: persist(all), accepted,
-    remaining: list.importSongs?.filter(s => s.status === 'review').length ?? 0 }
-}
-
-export function createSongPlaylist(name: string, songs: ImportSong[], id = newId()): string {
-  const all = loadPlaylists()
-  if (!all[id]) persist({ ...all, [id]: {
-    id, name, tracks: [], createdAt: new Date().toISOString(), importSongs: songs,
-  } })
-  return id
-}
-
-/** Save the accepted track and queue progress together so interrupted imports resume. */
-export function resolveImportSong(id: string, index: number,
-  status: ImportSong['status'], candidates?: TrackMatch[], match?: TrackMatch): Playlists {
-  const all = loadPlaylists()
-  const list = all[id]
-  const song = list?.importSongs?.[index]
-  if (!song) throw new Error('Import playlist no longer exists.')
-  if (match) {
-    const existing = list.tracks.find(t => t.uri === match.uri)
-    if (existing && existing.year !== song.year) throw new Error('This recording is already assigned to another year. Choose another recording or skip this song.')
-    if (!existing) list.tracks.push(importedTrack(song, match))
-  }
-  list.importSongs![index] = { ...song, status, candidates }
-  return persist(all)
-}
-
-export function createPlaylist(name: string): Playlists {
+export async function createPlaylist(name: string): Promise<Playlists> {
   const id = newId()
   return persist({
     ...loadPlaylists(),
@@ -102,63 +55,71 @@ export function createPlaylist(name: string): Playlists {
   })
 }
 
-export function deletePlaylist(id: string): Playlists {
+export async function deletePlaylist(id: string): Promise<Playlists> {
+  if (databaseLibrary().playlists[id]?.readOnly) throw new Error('Shared database playlists are read-only.')
   const all = loadPlaylists()
   delete all[id]
-  setActiveIds(activeIds().filter((a) => a !== id))
   return persist(all)
 }
 
-export function renamePlaylist(id: string, name: string): Playlists {
+export async function renamePlaylist(id: string, name: string): Promise<Playlists> {
+  if (databaseLibrary().playlists[id]?.readOnly) throw new Error('Shared database playlists are read-only.')
   const all = loadPlaylists()
   if (all[id]) all[id] = { ...all[id], name }
   return persist(all)
 }
 
-export function addTracks(id: string, tracks: PlaylistTrack[]): Playlists {
+export async function addTracks(id: string, tracks: PlaylistTrack[]): Promise<Playlists> {
+  if (databaseLibrary().playlists[id]?.readOnly) throw new Error('Shared database playlists are read-only.')
   const all = loadPlaylists()
   const list = all[id]
   if (!list) return all
   const seen = new Set(list.tracks.map((t) => t.uri))
-  all[id] = { ...list, tracks: [...list.tracks, ...tracks.filter((t) => !seen.has(t.uri))] }
+  all[id] = { ...list, tracks: [...list.tracks, ...tracks.filter((t) => {
+    if (seen.has(t.uri)) return false
+    seen.add(t.uri)
+    return true
+  })] }
   return persist(all)
 }
 
-export function removeTrack(id: string, uri: string): Playlists {
+export async function removeTrack(id: string, uri: string): Promise<Playlists> {
+  if (databaseLibrary().playlists[id]?.readOnly) throw new Error('Shared database playlists are read-only.')
   const all = loadPlaylists()
   const list = all[id]
-  if (list) all[id] = { ...list, tracks: list.tracks.filter((t) => t.uri !== uri) }
+  if (list) all[id] = { ...list, tracks: list.tracks.filter((t) => (t.id ?? t.uri) !== uri) }
   return persist(all)
 }
 
-export function setTrackYear(id: string, uri: string, year: number): Playlists {
+export async function setTrackYear(id: string, uri: string, year: number): Promise<Playlists> {
+  if (databaseLibrary().playlists[id]?.readOnly) throw new Error('Shared database playlists are read-only.')
   const all = loadPlaylists()
   const list = all[id]
   if (list) {
     all[id] = {
       ...list,
-      tracks: list.tracks.map((t) => (t.uri === uri ? { ...t, year } : t)),
+      tracks: list.tracks.map((t) => ((t.id ?? t.uri) === uri ? { ...t, year } : t)),
     }
   }
   return persist(all)
 }
 
+export async function setTrackPreview(id: string, trackId: string, previewUrl: string): Promise<Playlists> {
+  const all = loadPlaylists()
+  if (!all[id] || all[id].readOnly) throw new Error('This playlist cannot be edited.')
+  all[id].tracks = all[id].tracks.map(t => (t.id ?? t.uri) === trackId ? { ...t, previewUrl: previewUrl.trim() || null } : t)
+  return persist(all)
+}
+
 // --- activation -----------------------------------------------------------
 
-export function activeIds(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem(ACTIVE_KEY) ?? '[]') as string[]
-  } catch {
-    return []
-  }
+export const activeIds = (): string[] => [...databaseLibrary().activeIds]
+
+export async function setActiveIds(ids: string[]): Promise<string[]> {
+  return (await persistLibrary({ ...databaseLibrary(), activeIds: ids })).activeIds
 }
 
-export function setActiveIds(ids: string[]): string[] {
-  localStorage.setItem(ACTIVE_KEY, JSON.stringify(ids))
-  return ids
-}
-
-export const toggleActive = (id: string): string[] => {
+export const toggleActive = (id: string): Promise<string[]> => {
   const current = activeIds()
   return setActiveIds(current.includes(id) ? current.filter((i) => i !== id) : [...current, id])
 }
@@ -190,7 +151,7 @@ export function pickTrack(
   year: number,
   used: Set<string>,
 ): { track: PlaylistTrack; repeat: boolean } | null {
-  const candidates = tracksForYear(year)
+  const candidates = tracksForYear(year).filter(t => !!t.previewUrl)
   if (candidates.length === 0) return null
   const fresh = candidates.filter((t) => !used.has(t.uri))
   const pool = fresh.length > 0 ? fresh : candidates
@@ -229,11 +190,14 @@ export function yearWarning(albumName: string, albumType: string, year: number):
 
 export const exportPlaylists = () => JSON.stringify(Object.values(loadPlaylists()), null, 2)
 
-export function importPlaylists(text: string): number {
+export async function importPlaylists(text: string): Promise<number> {
   const rows = JSON.parse(text) as Playlist[]
   if (!Array.isArray(rows)) throw new Error('Expected a JSON array of playlists')
   const all = loadPlaylists()
-  for (const p of rows) if (p?.id && Array.isArray(p.tracks)) all[p.id] = p
-  persist(all)
+  for (const p of rows) {
+    if (!p?.id || !Array.isArray(p.tracks)) throw new Error('Invalid playlist')
+    all[p.id] = p
+  }
+  await persist(all)
   return rows.length
 }

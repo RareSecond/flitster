@@ -1,51 +1,37 @@
-import { useMemo, useState } from 'react'
-import { getCurrentlyPlaying, getPlaylistTracks, searchTracks, type TrackMatch } from '../lib/spotifyApi'
+import { useLibrary } from '../hooks/useLibrary'
+import { useEffect, useMemo, useState } from 'react'
 import { loadDeck } from '../lib/deck'
-import belgianSongs from '../lib/belgianSongs.json'
-import { parseSongs } from '../lib/songImport'
-import { SongImport } from './SongImport'
 import {
   activeIds,
   addTracks,
   coverage,
   createPlaylist,
-  createSongPlaylist,
   deletePlaylist,
   exportPlaylists,
   importPlaylists,
   loadPlaylists,
   removeTrack,
   setTrackYear,
+  setTrackPreview,
   toggleActive,
   yearWarning,
-  type PlaylistTrack,
   type Playlists,
 } from '../lib/playlists'
 
 const MAX_ROWS = 150
 
-const toPlaylistTrack = (t: TrackMatch): PlaylistTrack => ({
-  uri: t.uri,
-  title: t.title,
-  artist: t.artist,
-  year: t.year,
-  spotifyYear: t.year,
-  albumName: t.albumName,
-})
-
 export function PlaylistScreen({ onBack }: { onBack: () => void }) {
+  const library = useLibrary()
   const [lists, setLists] = useState<Playlists>(loadPlaylists)
   const [active, setActive] = useState<string[]>(activeIds)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [newName, setNewName] = useState('')
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState<TrackMatch[]>([])
-  const [importUrl, setImportUrl] = useState('')
   const [filter, setFilter] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
-  const deck = useMemo(loadDeck, [])
+  useEffect(() => { setLists(loadPlaylists()); setActive(activeIds()) }, [library])
+  const deck = useMemo(loadDeck, [library])
   // Recomputed against `active` so the shortfall reacts to what you switch on.
   const cover = useMemo(() => coverage(deck), [deck, active, lists])
   const gaps = cover.filter((c) => c.short > 0)
@@ -63,27 +49,6 @@ export function PlaylistScreen({ onBack }: { onBack: () => void }) {
       setBusy(false)
     }
   }
-
-  const addFromCurrent = () =>
-    guard(async () => {
-      const t = await getCurrentlyPlaying()
-      if (!t) return setMessage('Nothing is playing on Spotify right now.')
-      if (selectedId) setLists(addTracks(selectedId, [toPlaylistTrack(t)]))
-    })
-
-  const runSearch = () =>
-    guard(async () => {
-      setResults(await searchTracks(query))
-    })
-
-  const importSpotify = () =>
-    guard(async () => {
-      if (!selectedId) return
-      const tracks = await getPlaylistTracks(importUrl)
-      setLists(addTracks(selectedId, tracks.map(toPlaylistTrack)))
-      setMessage(`Added ${tracks.length} tracks. Check the flagged years.`)
-      setImportUrl('')
-    })
 
   const visible = useMemo(() => {
     if (!selected) return []
@@ -118,7 +83,7 @@ export function PlaylistScreen({ onBack }: { onBack: () => void }) {
           <li key={p.id}>
             <button
               className={active.includes(p.id) ? 'result on' : 'result'}
-              onClick={() => setActive(toggleActive(p.id))}
+              disabled={busy} onClick={() => guard(async () => { setActive(await toggleActive(p.id)) })}
             >
               <span>
                 {active.includes(p.id) ? '● ' : '○ '}
@@ -127,7 +92,7 @@ export function PlaylistScreen({ onBack }: { onBack: () => void }) {
               <em>{p.tracks.length} tracks</em>
             </button>
             <button className="ghost small" onClick={() => setSelectedId(p.id === selectedId ? null : p.id)}>
-              {p.id === selectedId ? 'done' : 'edit'}
+              {p.id === selectedId ? 'done' : p.readOnly ? 'view' : 'edit'}
             </button>
           </li>
         ))}
@@ -141,38 +106,14 @@ export function PlaylistScreen({ onBack }: { onBack: () => void }) {
         />
         <button
           className="ghost"
-          onClick={() => {
-            setLists(createPlaylist(newName))
+          disabled={busy} onClick={() => guard(async () => {
+            setLists(await createPlaylist(newName))
             setNewName('')
-          }}
+          })}
         >
           Create
         </button>
       </div>
-
-      <button className="primary" onClick={() => {
-        try {
-          const id = createSongPlaylist('Belgian Hitster 1960–2025', parseSongs(belgianSongs), 'belgian-hitster-1960-2025')
-          setLists(loadPlaylists())
-          setSelectedId(id)
-          if (!activeIds().includes(id)) setActive(toggleActive(id))
-        } catch (e) { setMessage(String(e)) }
-      }}>Import Belgian Hitster ({belgianSongs.length} songs)</button>
-
-      <label className="hint">Import another song-list JSON
-        <input type="file" accept=".json,application/json" onChange={async e => {
-          const file = e.target.files?.[0]
-          e.target.value = ''
-          if (!file) return
-          try {
-            const songs = parseSongs(JSON.parse(await file.text()))
-            const id = createSongPlaylist(file.name.replace(/\.json$/i, ''), songs)
-            setLists(loadPlaylists())
-            setSelectedId(id)
-            setActive(toggleActive(id))
-          } catch (error) { setMessage(`Import failed: ${String(error)}`) }
-        }} />
-      </label>
 
       {Object.keys(deck).length > 0 && (
         <>
@@ -199,60 +140,35 @@ export function PlaylistScreen({ onBack }: { onBack: () => void }) {
 
       {selected && (
         <>
-          <h2>Editing “{selected.name}”</h2>
-          {selected.importSongs && <SongImport key={selected.id} playlist={selected} onChange={setLists} />}
-
-          <button className="ghost wide" onClick={addFromCurrent} disabled={busy}>
-            Add what's playing on Spotify
-          </button>
-
-          <div className="row">
-            <input
-              value={importUrl}
-              onChange={(e) => setImportUrl(e.target.value)}
-              placeholder="Paste a Spotify playlist link"
-            />
-            <button className="ghost" onClick={importSpotify} disabled={busy || !importUrl}>
-              Import
-            </button>
-          </div>
-
-          <div className="row">
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && runSearch()}
-              placeholder="Search artist / title"
-            />
-            <button className="ghost" onClick={runSearch} disabled={busy}>
-              Search
-            </button>
-          </div>
-
-          {results.length > 0 && (
-            <ul className="results">
-              {results.map((t) => (
-                <li key={t.uri}>
-                  <button
-                    className="result"
-                    onClick={() => {
-                      setLists(addTracks(selected.id, [toPlaylistTrack(t)]))
-                      setResults([])
-                      setQuery('')
-                    }}
-                  >
-                    <span>
-                      {t.artist} — {t.title}
-                    </span>
-                    <em>
-                      {t.year} · {t.albumName}
-                    </em>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-
+          <h2>{selected.readOnly ? 'Viewing' : 'Editing'} “{selected.name}”</h2>
+          {selected.readOnly && <p className="hint">Shared database playlist. This playlist belongs to another owner.</p>}
+          {!selected.readOnly && <form onSubmit={e => {
+            e.preventDefault()
+            const form = e.currentTarget
+            const data = new FormData(form)
+            const trackId = String(data.get('spotifyId')).trim().replace(/^spotify:track:/, '')
+            void guard(async () => {
+              if (!/^[A-Za-z0-9]{22}$/.test(trackId)) throw new Error('Enter a valid Spotify track ID or URI.')
+              const year = Number(data.get('year'))
+              setLists(await addTracks(selected.id, [{
+                uri: `spotify:track:${trackId}`, title: String(data.get('title')).trim(),
+                artist: String(data.get('artist')).trim(), year, spotifyYear: year, albumName: '',
+                previewUrl: String(data.get('previewUrl')).trim() || null,
+              }]))
+              form.reset()
+            })
+          }}>
+            <fieldset disabled={busy} style={{ border: 0, padding: 0, display: 'grid', gap: 8 }}>
+              <legend>Add track</legend>
+              <input name="spotifyId" aria-label="Spotify track ID" placeholder="Spotify track ID or URI" required />
+              <input name="title" aria-label="Song title" placeholder="Song title" required />
+              <input name="artist" aria-label="Artist" placeholder="Artist" required />
+              <input name="year" aria-label="Year" placeholder="Year" type="number" min="1000" max="9999" required />
+              <input name="previewUrl" aria-label="Preview URL" placeholder="Preview audio URL (optional)" type="url" />
+              <button className="ghost" type="submit">Add track</button>
+            </fieldset>
+            <p className="hint">Provide the track details directly. A preview URL is needed for in-app playback.</p>
+          </form>}
           <div className="row">
             <input
               value={filter}
@@ -265,7 +181,7 @@ export function PlaylistScreen({ onBack }: { onBack: () => void }) {
             {visible.map((t) => {
               const warn = yearWarning(t.albumName, '', t.year)
               return (
-                <li key={t.uri}>
+                <li key={t.id ?? t.uri}>
                   <div className="result static">
                     <span>
                       {t.artist} — {t.title}
@@ -274,19 +190,49 @@ export function PlaylistScreen({ onBack }: { onBack: () => void }) {
                       {t.albumName}
                       {t.year !== t.spotifyYear ? ` · was ${t.spotifyYear}` : ''}
                       {warn ? ` · ${warn}` : ''}
+                      {!t.previewUrl ? ' · No preview URL' : ''}
                     </em>
                   </div>
                   <input
-                    className="yearInput"
-                    value={String(t.year || '')}
-                    inputMode="numeric"
-                    onChange={(e) =>
-                      setLists(
-                        setTrackYear(selected.id, t.uri, Number(e.target.value.replace(/\D/g, '').slice(0, 4))),
-                      )
-                    }
+                    aria-label={`Preview URL for ${t.title}`}
+                    key={`preview:${t.id ?? t.uri}:${t.previewUrl ?? ''}`}
+                    type="url"
+                    placeholder="Preview URL"
+                    defaultValue={t.previewUrl ?? ''}
+                    disabled={selected.readOnly || busy}
+                    onBlur={e => {
+                      const input = e.currentTarget
+                      if (input.value.trim() === (t.previewUrl ?? '')) return
+                      void guard(async () => {
+                        try { setLists(await setTrackPreview(selected.id, t.id ?? t.uri, input.value)) }
+                        catch (error) { input.value = t.previewUrl ?? ''; throw error }
+                      })
+                    }}
+                    onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
                   />
-                  <button className="ghost small" onClick={() => setLists(removeTrack(selected.id, t.uri))}>
+                  <input
+                    key={`${t.id ?? t.uri}:${t.year}`}
+                    className="yearInput"
+                    disabled={selected.readOnly || busy}
+                    defaultValue={String(t.year || '')}
+                    inputMode="numeric"
+                    onBlur={(e) => {
+                      const input = e.currentTarget
+                      const value = Number(input.value)
+                      if (value === t.year) return
+                      if (!Number.isInteger(value) || value < 1000 || value > 9999) {
+                        input.value = String(t.year)
+                        setMessage('Enter a four-digit year.')
+                        return
+                      }
+                      void guard(async () => {
+                        try { setLists(await setTrackYear(selected.id, t.id ?? t.uri, value)) }
+                        catch (error) { input.value = String(t.year); throw error }
+                      })
+                    }}
+                    onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
+                  />
+                  <button disabled={selected.readOnly || busy} className="ghost small" onClick={() => guard(async () => { setLists(await removeTrack(selected.id, t.id ?? t.uri)) })}>
                     ✕
                   </button>
                 </li>
@@ -301,11 +247,12 @@ export function PlaylistScreen({ onBack }: { onBack: () => void }) {
 
           <button
             className="ghost wide"
-            onClick={() => {
-              setLists(deletePlaylist(selected.id))
+            disabled={selected.readOnly || busy}
+            onClick={() => guard(async () => {
+              setLists(await deletePlaylist(selected.id))
               setActive(activeIds())
               setSelectedId(null)
-            }}
+            })}
           >
             Delete “{selected.name}”
           </button>
@@ -328,7 +275,7 @@ export function PlaylistScreen({ onBack }: { onBack: () => void }) {
           className="ghost wide"
           onClick={async () => {
             try {
-              const n = importPlaylists(await navigator.clipboard.readText())
+              const n = await importPlaylists(await navigator.clipboard.readText())
               setLists(loadPlaylists())
               setMessage(`Imported ${n} playlists.`)
             } catch (e) {

@@ -1,10 +1,9 @@
+import { databaseLibrary, persistLibrary } from './library'
 /**
  * The deck is the physical truth: every card carries a QR code and a printed
  * year, and nothing else. You capture it once, and it never changes. Which song
  * belongs on a card is a *playlist* concern -- see `playlists.ts`.
  */
-const KEY = 'flitster.deck'
-
 export type DeckCard = {
   /** Raw QR payload, verbatim. The stable identity of a physical card. */
   code: string
@@ -14,23 +13,15 @@ export type DeckCard = {
 
 export type Deck = Record<string, DeckCard>
 
-export function loadDeck(): Deck {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) ?? '{}') as Deck
-  } catch {
-    return {}
-  }
-}
+export const loadDeck = (): Deck => structuredClone(databaseLibrary().deck)
 
-const persist = (deck: Deck) => {
-  localStorage.setItem(KEY, JSON.stringify(deck))
-  return deck
-}
+const persist = async (deck: Deck): Promise<Deck> =>
+  (await persistLibrary({ ...databaseLibrary(), deck })).deck
 
-export const addCard = (code: string, year: number): Deck =>
+export const addCard = (code: string, year: number): Promise<Deck> =>
   persist({ ...loadDeck(), [code]: { code, year, addedAt: new Date().toISOString() } })
 
-export const removeCard = (code: string): Deck => {
+export const removeCard = (code: string): Promise<Deck> => {
   const deck = loadDeck()
   delete deck[code]
   return persist(deck)
@@ -38,12 +29,15 @@ export const removeCard = (code: string): Deck => {
 
 export const exportDeck = () => JSON.stringify(Object.values(loadDeck()), null, 2)
 
-export function importDeck(text: string): number {
+export async function importDeck(text: string): Promise<number> {
   const rows = JSON.parse(text) as DeckCard[]
   if (!Array.isArray(rows)) throw new Error('Expected a JSON array of cards')
   const deck = loadDeck()
-  for (const c of rows) if (c?.code && c?.year) deck[c.code] = c
-  persist(deck)
+  for (const c of rows) {
+    if (!c?.code || !c?.year) throw new Error('Invalid deck card')
+    deck[c.code] = c
+  }
+  await persist(deck)
   return rows.length
 }
 

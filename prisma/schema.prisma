@@ -28,6 +28,8 @@ model User {
 model List {
   id          String           @id @default(cuid())
   name        String
+  createdAt   DateTime         @default(now()) @db.Timestamptz(6)
+  importSongs Json?
   ownerId     String
   owner       User             @relation(fields: [ownerId], references: [id], onDelete: Restrict)
   songs       Song[]
@@ -42,7 +44,10 @@ model Song {
   year      Int
   title     String
   artist    String
+  previewUrl String?
   spotifyId String
+  spotifyYear Int?
+  albumName String @default("")
   listId    String
   list      List   @relation(fields: [listId], references: [id], onDelete: Cascade)
 

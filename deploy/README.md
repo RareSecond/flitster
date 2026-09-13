@@ -47,7 +47,7 @@ The helper serializes deployments, loads the uploaded images, runs `prisma migra
 
 For rollback, read `/srv/apps/flitster/previous` and invoke the same helper with that release ID. Retain its app and migration images. Database migrations are not reversed; migrations must remain compatible with the previous application. Take database backups before destructive schema changes. Old images are retained until an administrator removes them.
 
-The GitHub workflow tests, builds, and uploads images on `main` or manual dispatch. Configure the production environment's `SSH_HOST`, `SSH_KEY`, and verified `SSH_KNOWN_HOSTS` secrets. Activation is deliberately an administrator step: the deploy user has neither sudo nor Docker access. There is currently no Git remote configured for Flitster, so the workflow will not run until this repository is hosted on GitHub.
+The GitHub workflow tests, builds, and uploads images on `master` or manual dispatch. Configure the production environment's `SSH_HOST`, `SSH_KEY`, and verified `SSH_KNOWN_HOSTS` secrets. Activation is deliberately an administrator step: the deploy user has neither sudo nor Docker access.
 
 No registry credentials are needed: images travel as a compressed Docker archive over SSH. Database credentials are managed in Phase and injected into application processes, not stored in CI or application env files on the VPS. The runtime runs as a non-root user, publishes no host ports, and connects to Caddy through `codictive_edge`.
 

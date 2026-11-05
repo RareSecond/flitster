@@ -7,12 +7,12 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
-      { title: 'Flitster' },
+      { title: 'Deckades' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no' },
       { name: 'theme-color', content: '#0b0b0f' },
       { name: 'apple-mobile-web-app-capable', content: 'yes' },
       { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
-      { name: 'apple-mobile-web-app-title', content: 'Flitster' },
+      { name: 'apple-mobile-web-app-title', content: 'Deckades' },
     ],
     links: [
       { rel: 'stylesheet', href: styles },
@@ -24,7 +24,7 @@ export const Route = createRootRoute({
   notFoundComponent: () => (
     <main className="app">
       <h1>Page not found</h1>
-      <Link to="/">Back to Flitster</Link>
+      <Link to="/">Back to Deckades</Link>
     </main>
   ),
 })

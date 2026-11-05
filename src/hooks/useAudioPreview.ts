@@ -58,7 +58,7 @@ export function useAudioPreview() {
         navigator.mediaSession.metadata = new MediaMetadata({
           title: meta.title,
           artist: meta.artist,
-          album: 'Flitster',
+          album: 'Deckades',
         })
       }
       return true

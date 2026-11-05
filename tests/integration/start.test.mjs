@@ -67,7 +67,7 @@ test('PWA precache includes the shell and every entry is served', async () => {
   }
   const manifest = await (await fetch(`${origin}/manifest.webmanifest`)).json()
   assert.equal(manifest.start_url, '/')
-  assert.equal(manifest.name, 'Flitster')
+  assert.equal(manifest.name, 'Deckades')
 })
 
 test('missing assets and API requests never fall back to the SPA document', async () => {

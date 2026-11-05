@@ -17,8 +17,8 @@ const pwaPlugins = VitePWA({
   },
   devOptions: { enabled: true, type: 'module' },
   manifest: {
-    name: 'Flitster',
-    short_name: 'Flitster',
+    name: 'Deckades',
+    short_name: 'Deckades',
     description: 'QR -> flip -> play. PWA feasibility prototype.',
     start_url: '/',
     display: 'standalone',

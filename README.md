@@ -1,4 +1,4 @@
-# Flitster
+# Deckades
 
 Repurposing a **Marimic** deck (a Hitster clone) so it plays *my* music.
 

@@ -157,7 +157,7 @@ export default function App() {
   return (
     <div className="app">
       <header>
-        <h1>Flitster</h1>
+        <h1>Deckades</h1>
         <button className="ghost" onClick={() => setShowDebug((v) => !v)}>
           {showDebug ? 'hide' : 'debug'}
         </button>

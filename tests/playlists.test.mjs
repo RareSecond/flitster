@@ -20,13 +20,15 @@ const { setDatabaseLibrary, databaseLibrary } = await import(pathToFileURL(join(
 const { createPlaylist, addTracks, setActiveIds, pickTrack, setTrackPreview } = await import(pathToFileURL(join(folder, 'playlists.mjs')))
 const track = { uri: 'spotify:track:4PTG3Z6ehGkBFwjybzWkR8', title: 'Test', artist: 'Artist', year: 1985, spotifyYear: 1985, albumName: '' }
 
-test('supplied IDs persist without lookups; only saved previews are playable', async () => {
+test('supplied IDs persist without lookups; preview mode requires saved URLs', async () => {
   setDatabaseLibrary({ deck: {}, playlists: {}, activeIds: [] })
   const lists = await createPlaylist('Test')
   const id = Object.keys(lists)[0]
   await addTracks(id, [track])
   await setActiveIds([id])
   assert.equal(pickTrack(1985, new Set()), null)
+  assert.equal(pickTrack(1985, new Set(), 'spotify').track.uri, track.uri)
+  assert.equal(pickTrack(1984, new Set(), 'spotify'), null)
   await setTrackPreview(id, track.uri, 'https://example.com/preview.mp3')
   assert.equal(pickTrack(1985, new Set()).track.previewUrl, 'https://example.com/preview.mp3')
   assert.equal(pickTrack(1985, new Set([track.uri])).repeat, true)

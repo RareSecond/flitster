@@ -33,7 +33,7 @@ why a round draws from a pool rather than mapping a card to a fixed song — thr
 Working: database-backed deck capture and playlists, direct track entry, multi-playlist
 activation, per-year coverage warnings, QR scanning, and flip-to-play audio previews.
 Track IDs and metadata are supplied when creating tracks. Playback uses a saved
-HTTPS preview URL directly; there is no Spotify login or track lookup.
+HTTPS preview URL or, if configured, the Spotify Web Playback SDK.
 
 ## Stack
 
@@ -95,13 +95,25 @@ Validation: `npm test`, `npm run typecheck`, and (after building)
 Create a playlist, open **edit**, and supply the Spotify track ID (or URI), title,
 artist, and game year. Optionally supply an HTTPS preview audio URL. Existing songs'
 preview URLs can be edited in the playlist. JSON playlist import/export also preserves
-`previewUrl`. The application makes no Spotify API calls and needs no Spotify credentials.
+`previewUrl`. Preview mode needs no Spotify credentials.
 
-A track ID identifies a recording; it does not contain a playable audio URL.
-Songs without a preview URL remain in the library but are excluded from playback.
-The existing seeded songs need preview URLs before they can play. No URLs are guessed
-or automatically fetched. The camera tap unlocks audio on iOS, and flipping the phone
-starts the saved preview.
+When the app runs without Spotify configuration, preview playback uses the
+saved HTTPS audio URLs. The camera tap unlocks audio on iOS, and flipping the
+phone starts the saved preview.
+
+### Spotify playback
+
+Set `VITE_SPOTIFY_CLIENT_ID` in `.env.local` before starting Vite or building
+for production. In the Spotify app dashboard, register the exact app URL with
+its trailing slash as a redirect URI (for example, `https://127.0.0.1:5173/`).
+For a Spotify app in Development Mode, add your Premium account to the app's
+user list if needed.
+
+Tap **Connect Spotify** on the Play screen and authorize with that account.
+Once the browser player is ready, scan and flip as usual. Spotify mode uses the
+saved track IDs, chooses a random start each round, and pauses after about 20
+seconds or near the end of a shorter track. Scanning is available once Spotify
+is ready. Spotify authorization is scoped to the current browser tab.
 
 ## Not built
 
@@ -109,13 +121,13 @@ Separate app accounts, players, scoring, and timeline placement are not built.
 The current deployment edits one shared personal library, selected server-side by
 `LIBRARY_OWNER_ID` (defaults to `SEED_OWNER_ID`, then `personal-import`). Activations
 are shared for that owner. Other owners' lists can be viewed and activated but not
-edited. There is no Spotify account connection.
+edited. Spotify sign-in authorizes playback for the current browser tab.
 The Codictive deployment is intentionally public without authentication. Anyone
 who can reach its URL can view and edit this shared library.
 
 The app no longer stores data in localStorage. Existing `flitster.*` entries are
-removed on startup without importing or overwriting the database. Legacy Spotify session entries are also removed on startup. No new browser tokens
-or preferences are persisted.
+removed on startup without importing or overwriting the database. Legacy Spotify
+session entries are also removed on startup.
 
 See [database setup](prisma/README.md) for migrations and seed commands.
 

@@ -150,8 +150,9 @@ export const tracksForYear = (year: number) => activeTracks().filter((t) => t.ye
 export function pickTrack(
   year: number,
   used: Set<string>,
+  mode: 'preview' | 'spotify' = 'preview',
 ): { track: PlaylistTrack; repeat: boolean } | null {
-  const candidates = tracksForYear(year).filter(t => !!t.previewUrl)
+  const candidates = tracksForYear(year).filter(t => mode === 'spotify' || !!t.previewUrl)
   if (candidates.length === 0) return null
   const fresh = candidates.filter((t) => !used.has(t.uri))
   const pool = fresh.length > 0 ? fresh : candidates

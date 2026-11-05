@@ -6,6 +6,7 @@ import { Outlet, useLocation, useNavigate } from '@tanstack/react-router'
 import { useQrScanner } from './hooks/useQrScanner'
 import { useFlipDetector } from './hooks/useFlipDetector'
 import { useAudioPreview } from './hooks/useAudioPreview'
+import { useSpotifyPlayback } from './hooks/useSpotifyPlayback'
 import { probeCapabilities } from './lib/capabilities'
 import { loadDeck, shortCode } from './lib/deck'
 import { activeIds, pickTrack, type PlaylistTrack } from './lib/playlists'
@@ -47,28 +48,40 @@ export default function App() {
   const [showDebug, setShowDebug] = useState(false)
   const capabilities = useMemo(probeCapabilities, [])
   const audio = useAudioPreview()
+  const spotify = useSpotifyPlayback()
+  const useSpotify = spotify.configured
+  const { activate: activateSpotify, play: playSpotify, stop: stopSpotify } = spotify
 
   const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null)
   /** Tracks already drawn this game, so repeated years give different songs. */
   const usedRef = useRef<Set<string>>(new Set())
   const claimedRef = useRef(false)
   const stopRef = useRef<(() => void) | null>(null)
-  const previewUrlRef = useRef<string | null>(null)
+  const playingRoundRef = useRef<Round | null>(null)
+  const resettingRef = useRef(false)
 
   // The flip fires from a sensor event that closed over an earlier render.
   const roundRef = useRef<Round | null>(null)
   roundRef.current = round
   const startPlayback = useCallback(async () => {
     const current = roundRef.current
-    const url = previewUrlRef.current
-    if (!current || !url) return
+    if (!current || playingRoundRef.current === current) return
+    playingRoundRef.current = current
     setPhase('playing')
-    const ok = await audio.play(url, { title: current.track.title, artist: current.track.artist })
-    if (!ok) {
+    try {
+      if (useSpotify) {
+        await playSpotify(current.track.uri)
+      } else {
+        const url = current.track.previewUrl
+        const ok = url && await audio.play(url, { title: current.track.title, artist: current.track.artist })
+        if (!ok) throw new Error('Could not play this preview. Check the saved preview URL and try again.')
+      }
+    } catch (error) {
+      if (roundRef.current !== current) return
       setPhase('error')
-      setMessage('Could not play this preview. Check the saved preview URL and try again.')
+      setMessage(error instanceof Error ? error.message : String(error))
     }
-  }, [audio])
+  }, [audio, playSpotify, useSpotify])
 
   const flip = useFlipDetector({ armed: phase === 'armed', onFlip: startPlayback })
 
@@ -82,13 +95,11 @@ export default function App() {
         setMessage(`Card ${shortCode(code)} is not in your deck yet.`)
         return
       }
-      const drawn = pickTrack(card.year, usedRef.current)
+      const drawn = pickTrack(card.year, usedRef.current, useSpotify ? 'spotify' : 'preview')
       if (!drawn) {
-        setMessage(`No playable preview for ${card.year}. Add a preview URL to a song in an active playlist.`)
-        return
-      }
-      if (!drawn.track.previewUrl) {
-        setMessage('This song has no preview URL. Add one in Playlists before playing.')
+        setMessage(useSpotify
+          ? `No Spotify track for ${card.year}. Add a song for that year to an active playlist.`
+          : `No playable preview for ${card.year}. Add a preview URL to a song in an active playlist.`)
         return
       }
       claimedRef.current = true
@@ -97,9 +108,7 @@ export default function App() {
       setMessage(null)
       setRound({ code, year: card.year, track: drawn.track, repeat: drawn.repeat })
       setPhase('armed')
-
-      previewUrlRef.current = drawn.track.previewUrl
-    }, []),
+    }, [useSpotify]),
   )
   stopRef.current = scanner.stop
 
@@ -108,14 +117,17 @@ export default function App() {
     setRound(null)
     setRevealed(false)
     claimedRef.current = false
-    previewUrlRef.current = null
-    // Both must happen inside the tap: iOS gates audio playback and the motion
-    // sensors on user activation.
-    await audio.primeFromGesture()
-    if (flip.permission === 'unknown') {
-      const ok = await flip.requestPermission()
-      if (!ok) setMessage('Motion permission denied — flip detection will not fire.')
+    playingRoundRef.current = null
+    // Start both requests during the tap so iOS can grant user activation.
+    const activation = useSpotify ? activateSpotify() : audio.primeFromGesture()
+    const motion = flip.permission === 'unknown' ? flip.requestPermission() : undefined
+    try {
+      await activation
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : String(error))
+      return
     }
+    if (await motion === false) setMessage('Motion permission denied — flip detection will not fire.')
     try {
       wakeLockRef.current =
         (await (
@@ -128,20 +140,24 @@ export default function App() {
     }
     setPhase('scanning')
     await scanner.start()
-  }, [audio, flip, scanner])
+  }, [activateSpotify, audio, flip, scanner, useSpotify])
 
   const reset = useCallback(async () => {
+    if (resettingRef.current) return
+    resettingRef.current = true
     scanner.stop()
     audio.stop()
-    await wakeLockRef.current?.release().catch(() => undefined)
-    wakeLockRef.current = null
-    claimedRef.current = false
-    previewUrlRef.current = null
+    roundRef.current = null
     setRound(null)
     setRevealed(false)
     setMessage(null)
+    await stopSpotify()
+    await wakeLockRef.current?.release().catch(() => undefined)
+    wakeLockRef.current = null
+    claimedRef.current = false
+    resettingRef.current = false
     setPhase('idle')
-  }, [audio, scanner])
+  }, [audio, scanner, stopSpotify])
 
   const stopRoundOnNavigation = useEffectEvent(() => {
     if (phase !== 'idle') void reset()
@@ -180,8 +196,26 @@ export default function App() {
                 </button>
               </div>
 
-              <p className="hint">Scan a card, then turn your phone face-down to hear the track.</p>
-              <button className="primary" onClick={beginRound} disabled={deckSize === 0 || activeCount === 0}>
+              {useSpotify && (
+                <div className="row">
+                  {spotify.selected ? (
+                    <>
+                      <span className="hint" role="status">
+                        {spotify.ready ? 'Spotify ready · random 20-second clips' : spotify.error ? 'Spotify unavailable' : 'Connecting Spotify…'}
+                      </span>
+                      <button className="ghost" onClick={spotify.disconnect}>Disconnect Spotify</button>
+                    </>
+                  ) : (
+                    <button className="ghost" onClick={spotify.connect} disabled={spotify.restoring}>Connect Spotify</button>
+                  )}
+                </div>
+              )}
+              <p className="hint">
+                {useSpotify && !spotify.selected
+                  ? 'Connect Spotify to scan cards.'
+                  : 'Scan a card, then turn your phone face-down to hear the track.'}
+              </p>
+              <button className="primary" onClick={beginRound} disabled={deckSize === 0 || activeCount === 0 || (useSpotify && !spotify.ready)}>
                 Scan a card
               </button>
               {deckSize === 0 && <p className="hint">Capture your deck first.</p>}
@@ -240,6 +274,7 @@ export default function App() {
 
           {scanner.error && <p className="banner warn">{scanner.error}</p>}
           {message && <p className="banner">{message}</p>}
+          {spotify.error && spotify.error !== message && <p role="alert" className="banner warn">{spotify.error}</p>}
 
           {phase !== 'idle' && (
             <button className="ghost wide" onClick={reset}>

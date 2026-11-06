@@ -10,6 +10,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # Public OAuth app identifier; Vite embeds it in the browser bundle.
+      VITE_SPOTIFY_CLIENT_ID: 9154687485944cd4ab1186175767aa83
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,8 +25,8 @@ jobs:
       - name: Build application and migration images
         run: |
           set -euo pipefail
-          docker build --platform linux/amd64 --target runtime -t "flitster:$GITHUB_SHA" .
-          docker build --platform linux/amd64 --target migrate -t "flitster-migrate:$GITHUB_SHA" .
+          docker build --platform linux/amd64 --build-arg VITE_SPOTIFY_CLIENT_ID --target runtime -t "flitster:$GITHUB_SHA" .
+          docker build --platform linux/amd64 --build-arg VITE_SPOTIFY_CLIENT_ID --target migrate -t "flitster-migrate:$GITHUB_SHA" .
       - name: Bundle the release
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
         run: |

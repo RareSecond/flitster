@@ -39,12 +39,14 @@ It builds both Linux images, uploads them, and invokes
 `/usr/local/sbin/flitster-release` automatically. Pull requests build and test
 without deploying or accessing production secrets.
 
-For a manual release, build and bundle the images first, then use Phase:
+For a manual release, export `VITE_SPOTIFY_CLIENT_ID` with the public Spotify
+client ID (the GitHub workflow supplies it automatically), build and bundle the
+images, then use Phase:
 
 ```sh
 release=$(git rev-parse HEAD)
-docker build --platform linux/amd64 --target runtime -t "flitster:$release" .
-docker build --platform linux/amd64 --target migrate -t "flitster-migrate:$release" .
+docker build --platform linux/amd64 --build-arg VITE_SPOTIFY_CLIENT_ID --target runtime -t "flitster:$release" .
+docker build --platform linux/amd64 --build-arg VITE_SPOTIFY_CLIENT_ID --target migrate -t "flitster-migrate:$release" .
 docker save "flitster:$release" "flitster-migrate:$release" | gzip > flitster-release.tar.gz
 phase run --app codictive --env production "bash deploy/publish.sh $release"
 ```

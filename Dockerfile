@@ -11,6 +11,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+ARG VITE_SPOTIFY_CLIENT_ID
 RUN npm run build
 
 FROM build AS migrate

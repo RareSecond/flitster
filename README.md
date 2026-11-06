@@ -109,6 +109,11 @@ its trailing slash as a redirect URI (for example, `https://127.0.0.1:5173/`).
 For a Spotify app in Development Mode, add your Premium account to the app's
 user list if needed.
 
+The GitHub workflow supplies the public client ID for production and passes it
+into both Docker builds. The Spotify app must allow
+`https://flitster.codictive.be/` as a redirect URI. This is build-time configuration:
+adding it to Phase's runtime environment alone does not enable the button.
+
 Tap **Connect Spotify** on the Play screen and authorize with that account.
 Once the browser player is ready, scan and flip as usual. Spotify mode uses the
 saved track IDs, chooses a random start each round, and pauses after about 20

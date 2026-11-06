@@ -1,18 +1,15 @@
 name: Deploy
 on:
+  pull_request:
   push:
     branches: [master]
   workflow_dispatch:
 permissions:
   contents: read
-concurrency:
-  group: flitster-production
-  cancel-in-progress: false
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: production
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,19 +19,49 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run test:production
-      - name: Configure SSH
-        env:
-          SSH_KEY: ${{ secrets.SSH_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+      - name: Build application and migration images
         run: |
-          install -d -m 700 ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-      - name: Build and deploy
+          set -euo pipefail
+          docker build --platform linux/amd64 --target runtime -t "flitster:$GITHUB_SHA" .
+          docker build --platform linux/amd64 --target migrate -t "flitster-migrate:$GITHUB_SHA" .
+      - name: Bundle the release
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+        run: |
+          set -euo pipefail
+          docker save "flitster:$GITHUB_SHA" "flitster-migrate:$GITHUB_SHA" | gzip > flitster-release.tar.gz
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+        with:
+          name: flitster-release
+          path: flitster-release.tar.gz
+          compression-level: 0
+          retention-days: 1
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    concurrency:
+      group: flitster-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: flitster-release
+      - name: Install Phase CLI
+        run: |
+          set -euo pipefail
+          curl -fsSL https://pkg.phase.dev/install.sh -o /tmp/install-phase.sh
+          sh /tmp/install-phase.sh --version 2.3.2
+      - name: Deploy using infrastructure credentials from Phase
         env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-        run: bash deploy/publish.sh "$GITHUB_SHA"
-      - name: Clean up credentials
-        if: always()
-        run: rm -f ~/.ssh/id_ed25519
+          PHASE_SERVICE_TOKEN: ${{ secrets.PHASE_SERVICE_TOKEN }}
+          PHASE_HOST: ${{ vars.PHASE_HOST }}
+          INFRA_PHASE_APP: ${{ vars.INFRA_PHASE_APP || 'codictive' }}
+        run: |
+          set -euo pipefail
+          : "${PHASE_SERVICE_TOKEN:?Set PHASE_SERVICE_TOKEN in the production environment}"
+          phase run --app "$INFRA_PHASE_APP" --env production "bash deploy/publish.sh $GITHUB_SHA"

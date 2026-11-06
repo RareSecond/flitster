@@ -10,3 +10,4 @@ dev-dist
 .env.*
 server/generated
 deploy/*.tar*
+flitster-release.tar.gz

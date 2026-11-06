@@ -1,6 +1,6 @@
 # Codictive VPS deployment
 
-DNS already resolves `flitster.codictive.be` to `161.35.95.167` through the existing wildcard. Codictive owns Caddy routing, the Compose stack, and the administrator release helper. This repository owns application images and the upload workflow.
+DNS already resolves `flitster.codictive.be` to `161.35.95.167` through the existing wildcard. Codictive owns Caddy routing, the Compose stack, and the administrator release helper. This repository owns application images and the deployment workflow.
 
 ## First installation
 
@@ -27,16 +27,26 @@ Apply the app role from Codictive:
 ansible-playbook playbooks/site.yml --tags flitster
 ```
 
-Build and upload the two Linux images from this repository:
+In GitHub, add `PHASE_SERVICE_TOKEN` to this repository's `production`
+environment. As in GAINS, its service account needs read access to
+`codictive/production`, containing `INFRA_SSH_HOST`, `INFRA_SSH_KEY`, and
+`INFRA_SSH_KNOWN_HOSTS`. These credentials authenticate as the VPS administrator
+and pin its SSH host key. The mounted runtime token also needs read access to
+`flitster/production`.
+
+Push or merge to `master`, or manually run the Deploy workflow on `master`.
+It builds both Linux images, uploads them, and invokes
+`/usr/local/sbin/flitster-release` automatically. Pull requests build and test
+without deploying or accessing production secrets.
+
+For a manual release, build and bundle the images first, then use Phase:
 
 ```sh
-SSH_HOST=161.35.95.167 bash deploy/publish.sh release-20260913
-```
-
-The upload uses your SSH configuration (by default the `deploy` user). An administrator activates the release:
-
-```sh
-ssh root@161.35.95.167 /usr/local/sbin/flitster-release release-20260913
+release=$(git rev-parse HEAD)
+docker build --platform linux/amd64 --target runtime -t "flitster:$release" .
+docker build --platform linux/amd64 --target migrate -t "flitster-migrate:$release" .
+docker save "flitster:$release" "flitster-migrate:$release" | gzip > flitster-release.tar.gz
+phase run --app codictive --env production "bash deploy/publish.sh $release"
 ```
 
 Then apply Codictive's proxy configuration with `make proxy`. Caddy automatically obtains a certificate. Verify that `/api/health` returns JSON and the library loads successfully in the browser.
@@ -47,7 +57,13 @@ The helper serializes deployments, loads the uploaded images, runs `prisma migra
 
 For rollback, read `/srv/apps/flitster/previous` and invoke the same helper with that release ID. Retain its app and migration images. Database migrations are not reversed; migrations must remain compatible with the previous application. Take database backups before destructive schema changes. Old images are retained until an administrator removes them.
 
-The GitHub workflow tests, builds, and uploads images on `master` or manual dispatch. Configure the production environment's `SSH_HOST`, `SSH_KEY`, and verified `SSH_KNOWN_HOSTS` secrets. Activation is deliberately an administrator step: the deploy user has neither sudo nor Docker access.
+The GitHub workflow runs the existing tests and builds before accessing production
+credentials. It transfers a one-day release artifact to a separate deployment
+job, fetches infrastructure credentials using Phase CLI v2.3.2, uploads over
+host-key-verified SSH, activates the release, and checks the public `/api/health`
+endpoint. Deployment jobs are serialized. Temporary SSH credentials are removed
+on success or failure. Optional GitHub variables `INFRA_PHASE_APP` and `PHASE_HOST`
+override the default infrastructure app (`codictive`) and Phase endpoint.
 
 No registry credentials are needed: images travel as a compressed Docker archive over SSH. Database credentials are managed in Phase and injected into application processes, not stored in CI or application env files on the VPS. The runtime runs as a non-root user, publishes no host ports, and connects to Caddy through `codictive_edge`.
 

@@ -9,3 +9,4 @@ dev-dist
 !.env.example
 server/generated/
 .DS_Store
+flitster-release.tar.gz
